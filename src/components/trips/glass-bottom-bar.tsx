@@ -33,7 +33,7 @@ export function GlassBottomBar({
         onClick={() => onTabChange(id)}
         aria-current={active ? "page" : undefined}
         className={cn(
-          "relative flex h-11 flex-1 flex-col items-center justify-center gap-0.5 rounded-full text-[10px] font-medium transition-all duration-300",
+          "relative flex h-11 w-16 shrink-0 flex-col items-center justify-center gap-0.5 rounded-full text-[10px] font-medium transition-all duration-300",
           active
             ? "bg-foreground/[0.07] text-foreground shadow-[inset_0_1px_0_rgb(255_255_255/0.5)] dark:bg-white/10 dark:shadow-[inset_0_1px_0_rgb(255_255_255/0.08)]"
             : "text-muted-foreground active:scale-95"
@@ -59,7 +59,7 @@ export function GlassBottomBar({
     >
       <div
         className={cn(
-          "pointer-events-auto relative flex w-full max-w-sm items-center gap-1 rounded-full p-1",
+          "pointer-events-auto relative flex w-fit items-center gap-0.5 rounded-full p-1",
           // liquid glass: translucent fill, heavy blur + saturation, bright rim, soft drop shadow
           "border border-white/50 bg-white/35 backdrop-blur-xl backdrop-saturate-[1.8]",
           "shadow-[0_10px_40px_-8px_rgb(0_0_0/0.25),inset_0_1px_0_rgb(255_255_255/0.9),inset_0_-1px_0_rgb(0_0_0/0.04)]",
@@ -67,14 +67,14 @@ export function GlassBottomBar({
         )}
       >
         {/* sheen */}
-        <span aria-hidden className="pointer-events-none absolute inset-x-6 top-0 h-px bg-gradient-to-r from-transparent via-white to-transparent opacity-80 dark:opacity-30" />
+        <span aria-hidden className="pointer-events-none absolute inset-x-5 top-0 h-px bg-gradient-to-r from-transparent via-white to-transparent opacity-80 dark:opacity-30" />
         {tabButton(ITEMS[0])}
         {tabButton(ITEMS[1])}
         <button
           type="button"
           onClick={onAdd}
           aria-label="Add expense"
-          className="grid size-11 shrink-0 place-items-center rounded-full bg-primary text-primary-foreground shadow-[0_6px_20px_-4px_rgb(0_0_0/0.45),inset_0_1px_0_rgb(255_255_255/0.25)] transition active:scale-90"
+          className="mx-1 grid size-11 shrink-0 place-items-center rounded-full bg-primary text-primary-foreground shadow-[0_6px_20px_-4px_rgb(0_0_0/0.45),inset_0_1px_0_rgb(255_255_255/0.25)] transition active:scale-90"
         >
           <Plus className="size-5" strokeWidth={2.4} />
         </button>
