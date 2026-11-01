@@ -26,6 +26,8 @@ export interface ExpenseSplit {
   member_id: string
   share: number
   weight: number | null
+  /** Set when this person has paid back their share of the expense. */
+  settled_at?: string | null
 }
 
 export interface Expense {

@@ -32,7 +32,13 @@ export function computeBalances(
     const rate = Number(e.fx_rate)
     paid.set(e.paid_by, (paid.get(e.paid_by) ?? 0) + toCents(Number(e.amount) * rate))
     for (const s of e.expense_splits) {
-      owed.set(s.member_id, (owed.get(s.member_id) ?? 0) + toCents(Number(s.share) * rate))
+      const c = toCents(Number(s.share) * rate)
+      owed.set(s.member_id, (owed.get(s.member_id) ?? 0) + c)
+      // Share already paid back to the payer for this expense: cancel it out.
+      if (s.settled_at && s.member_id !== e.paid_by) {
+        adj.set(s.member_id, (adj.get(s.member_id) ?? 0) + c)
+        adj.set(e.paid_by, (adj.get(e.paid_by) ?? 0) - c)
+      }
     }
   }
   for (const s of settlements) {

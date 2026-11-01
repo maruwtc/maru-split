@@ -24,7 +24,7 @@ export default async function TripPage({ params }: PageProps<"/trips/[tripId]">)
       .order("created_at"),
     supabase
       .from("expenses")
-      .select("*, expense_splits(member_id, share, weight)")
+      .select("*, expense_splits(member_id, share, weight, settled_at)")
       .eq("trip_id", tripId)
       .order("spent_at", { ascending: false })
       .order("created_at", { ascending: false }),

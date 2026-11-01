@@ -283,6 +283,7 @@ export function TripView({
             }}
             onCurrencyUsed={setLastCurrency}
             onMemberAdded={() => router.refresh()}
+            onSettledChange={() => router.refresh()}
           />
         ) : null}
       </ResponsiveDialog>

@@ -1,7 +1,7 @@
 "use client"
 
 import { formatDay } from "@/lib/date"
-import { Receipt } from "lucide-react"
+import { Check, Receipt } from "lucide-react"
 import { MemberAvatar } from "@/components/member-avatar"
 import { categoryById } from "@/lib/categories"
 import { formatMoney } from "@/lib/money"
@@ -59,18 +59,28 @@ export function ExpenseList({
                 const cat = categoryById(e.category)
                 const Icon = cat.icon
                 const payer = membersById.get(e.paid_by)
-                const myShare = myMemberId
-                  ? Number(e.expense_splits.find((s) => s.member_id === myMemberId)?.share ?? 0)
-                  : 0
+                const mySplit = myMemberId ? e.expense_splits.find((s) => s.member_id === myMemberId) : undefined
+                const myShare = Number(mySplit?.share ?? 0)
                 const iPaid = myMemberId === e.paid_by
-                const myNet = (iPaid ? Number(e.amount) : 0) - myShare
+                const others = e.expense_splits.filter((s) => s.member_id !== e.paid_by)
+                const settledCount = others.filter((s) => s.settled_at).length
+                const allSettled = others.length > 0 && settledCount === others.length
+                // What's still outstanding for me on this expense.
+                const myNet = iPaid
+                  ? others.filter((s) => !s.settled_at).reduce((t, s) => t + Number(s.share), 0)
+                  : mySplit && !mySplit.settled_at
+                    ? -myShare
+                    : 0
                 const isForeign = e.currency !== trip.base_currency
                 return (
                   <li key={e.id}>
                     <button
                       type="button"
                       onClick={() => onSelect(e)}
-                      className="flex w-full items-center gap-3 px-3 py-3 text-left transition hover:bg-muted/50 active:bg-muted md:px-4"
+                      className={cn(
+                        "flex w-full items-center gap-3 px-3 py-3 text-left transition hover:bg-muted/50 active:bg-muted md:px-4",
+                        allSettled && "opacity-60"
+                      )}
                     >
                       <span className={cn("grid size-10 shrink-0 place-items-center rounded-xl", cat.className)}>
                         <Icon className="size-5" />
@@ -80,13 +90,22 @@ export function ExpenseList({
                         <span className="mt-0.5 flex items-center gap-1.5 text-xs text-muted-foreground">
                           {payer ? <MemberAvatar member={payer} className="size-4 [&_[data-slot=avatar-fallback]]:text-[8px]" /> : null}
                           <span className="truncate">
-                            {iPaid ? "You" : payer?.display_name ?? "Someone"} paid · {e.expense_splits.length === membersById.size ? "everyone" : `${e.expense_splits.length} ${e.expense_splits.length === 1 ? "person" : "people"}`}
+                            {iPaid ? "You" : payer?.display_name ?? "Someone"} paid ·{" "}
+                            {settledCount > 0 && !allSettled
+                              ? `${settledCount}/${others.length} settled`
+                              : e.expense_splits.length === membersById.size
+                                ? "everyone"
+                                : `${e.expense_splits.length} ${e.expense_splits.length === 1 ? "person" : "people"}`}
                           </span>
                         </span>
                       </span>
                       <span className="shrink-0 text-right">
                         <span className="block font-semibold tabular-nums">{formatMoney(Number(e.amount), e.currency)}</span>
-                        {myMemberId && Math.abs(myNet) >= 0.005 ? (
+                        {allSettled ? (
+                          <span className="mt-0.5 inline-flex items-center gap-1 rounded-full bg-positive/15 px-2 py-0.5 text-[11px] font-medium text-positive">
+                            <Check className="size-3" /> Settled
+                          </span>
+                        ) : myMemberId && Math.abs(myNet) >= 0.005 ? (
                           <span className={cn("block text-xs tabular-nums", myNet > 0 ? "text-positive" : "text-negative")}>
                             {myNet > 0 ? "you lent " : "you owe "}
                             {formatMoney(Math.abs(myNet), e.currency)}

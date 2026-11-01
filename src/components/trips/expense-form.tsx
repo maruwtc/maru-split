@@ -33,6 +33,7 @@ export function ExpenseForm({
   onDone,
   onCurrencyUsed,
   onMemberAdded,
+  onSettledChange,
 }: {
   trip: Trip
   members: Member[]
@@ -42,6 +43,7 @@ export function ExpenseForm({
   onDone: (saved: boolean) => void
   onCurrencyUsed?: (currency: string) => void
   onMemberAdded?: () => void
+  onSettledChange?: () => void
 }) {
   // People added from inside the form show up immediately.
   const [added, setAdded] = useState<Member[]>([])
@@ -76,6 +78,10 @@ export function ExpenseForm({
     return init
   })
   const [saving, setSaving] = useState(false)
+  const [settled, setSettled] = useState<Set<string>>(
+    () => new Set((expense?.expense_splits ?? []).filter((s) => s.settled_at).map((s) => s.member_id))
+  )
+  const [settling, setSettling] = useState<string | null>(null)
   const [deleting, setDeleting] = useState(false)
 
   const amountNum = Number(amount) || 0
@@ -95,6 +101,37 @@ export function ExpenseForm({
   function changeCurrency(c: string) {
     setCurrency(c)
     setFxRate(String(rateFor(c, trip.base_currency, trip.fx_rates)))
+  }
+
+  // People who owe the payer on this expense.
+  const debtors = orderedSelected.filter((id) => id !== paidBy)
+  const savedSplitIds = new Set((expense?.expense_splits ?? []).map((s) => s.member_id))
+
+  /** Toggle "paid back". On a saved expense this is stored right away — anyone in the trip can do it. */
+  async function setPaidBack(ids: string[], value: boolean) {
+    const next = new Set(settled)
+    ids.forEach((id) => (value ? next.add(id) : next.delete(id)))
+    setSettled(next)
+    const live = expense ? ids.filter((id) => savedSplitIds.has(id) && expense.paid_by === paidBy) : []
+    if (!expense || live.length === 0) return
+    setSettling(ids.length > 1 ? "all" : ids[0])
+    const { error } = await createClient()
+      .from("expense_splits")
+      .update({ settled_at: value ? new Date().toISOString() : null })
+      .eq("expense_id", expense.id)
+      .in("member_id", live)
+    setSettling(null)
+    if (error) {
+      setSettled(settled)
+      return toast.error(error.message)
+    }
+    const name = (id: string) => members.find((m) => m.id === id)?.display_name ?? "Someone"
+    toast.success(
+      ids.length > 1
+        ? value ? "Marked as settled" : "Marked as not settled"
+        : value ? `${name(ids[0])} paid back` : `${name(ids[0])} not paid back yet`
+    )
+    onSettledChange?.()
   }
 
   async function save(e: React.FormEvent) {
@@ -125,6 +162,7 @@ export function ExpenseForm({
         member_id: id,
         share: shares[id] ?? 0,
         weight: mode === "shares" ? numericInputs[id] : null,
+        settled: id !== paidBy && settled.has(id),
       })),
     })
     setSaving(false)
@@ -338,6 +376,52 @@ export function ExpenseForm({
           </p>
         ) : null}
       </div>
+
+      {/* Paid back */}
+      {debtors.length > 0 ? (
+        <div className="space-y-2">
+          <div className="flex items-center justify-between gap-2">
+            <Label>Paid back</Label>
+            {debtors.every((id) => settled.has(id)) ? (
+              <button type="button" className="text-xs text-muted-foreground hover:underline" onClick={() => setPaidBack(debtors, false)} disabled={!!settling}>
+                Mark not settled
+              </button>
+            ) : (
+              <button type="button" className="text-xs font-medium hover:underline" onClick={() => setPaidBack(debtors, true)} disabled={!!settling}>
+                {settling === "all" ? "Saving…" : "Mark all settled"}
+              </button>
+            )}
+          </div>
+          <div className="flex flex-wrap gap-2">
+            {debtors.map((id) => {
+              const m = members.find((x) => x.id === id)
+              if (!m) return null
+              const on = settled.has(id)
+              return (
+                <button
+                  key={id}
+                  type="button"
+                  onClick={() => setPaidBack([id], !on)}
+                  disabled={!!settling}
+                  aria-pressed={on}
+                  className={cn(
+                    "flex items-center gap-2 rounded-full border py-1 pl-1 pr-3 text-sm transition",
+                    on ? "border-positive/40 bg-positive/10 text-positive" : "text-muted-foreground hover:bg-muted"
+                  )}
+                >
+                  <MemberAvatar member={m} className="size-6" />
+                  {m.display_name}
+                  {settling === id ? <Loader2 className="size-3.5 animate-spin" /> : on ? <Check className="size-3.5" /> : null}
+                </button>
+              )
+            })}
+          </div>
+          <p className="text-xs text-muted-foreground">
+            Tap a person once they&apos;ve paid {members.find((m) => m.id === paidBy)?.display_name ?? "the payer"} back for this.
+            {expense ? " Saved instantly — anyone on the trip can mark it." : ""}
+          </p>
+        </div>
+      ) : null}
 
       {/* Date + notes */}
       <div className="grid gap-3 sm:grid-cols-2">
