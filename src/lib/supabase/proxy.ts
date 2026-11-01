@@ -5,6 +5,16 @@ import { SUPABASE_KEY, SUPABASE_URL } from "./env"
 const PUBLIC_PATHS = ["/", "/login", "/auth"]
 
 export async function updateSession(request: NextRequest) {
+  // If Supabase falls back to the Site URL (redirect URL not allow-listed), the
+  // OAuth code lands on "/" or another page. Hand it to the callback route.
+  const code = request.nextUrl.searchParams.get("code")
+  if (code && !request.nextUrl.pathname.startsWith("/auth/callback")) {
+    const url = request.nextUrl.clone()
+    url.pathname = "/auth/callback"
+    url.search = `?code=${encodeURIComponent(code)}`
+    return NextResponse.redirect(url)
+  }
+
   let response = NextResponse.next({ request })
 
   const supabase = createServerClient(SUPABASE_URL, SUPABASE_KEY, {
