@@ -171,7 +171,7 @@ export function TripView({
   const membersSection = <MembersPanel trip={trip} members={members} myMemberId={myMemberId} />
 
   return (
-    <main className="mx-auto w-full max-w-6xl flex-1 px-4 pb-32 pt-4 md:px-6 lg:pb-12 md:pt-6">
+    <main className="mx-auto w-full max-w-6xl flex-1 px-4 pb-24 pt-4 md:px-6 lg:pb-12 md:pt-6">
       {/* Title row */}
       <div className="mb-4 flex items-center gap-2">
         <Button asChild variant="ghost" size="icon" className="-ml-2 shrink-0" aria-label="Back to trips">

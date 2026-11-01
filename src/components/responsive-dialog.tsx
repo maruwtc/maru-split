@@ -49,12 +49,12 @@ export function ResponsiveDialog({
 
   return (
     <Drawer open={open} onOpenChange={onOpenChange} repositionInputs={false}>
-      <DrawerContent className="max-h-[94dvh]">
+      <DrawerContent className="max-h-[94dvh] overflow-x-hidden">
         <DrawerHeader className="pb-2 text-left">
           <DrawerTitle>{title}</DrawerTitle>
           {description ? <DrawerDescription>{description}</DrawerDescription> : null}
         </DrawerHeader>
-        <div className="min-w-0 overflow-y-auto px-4 pb-safe">{children}</div>
+        <div className="min-w-0 touch-pan-y overflow-x-hidden overflow-y-auto overscroll-contain px-4 pb-safe">{children}</div>
       </DrawerContent>
     </Drawer>
   )

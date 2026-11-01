@@ -145,7 +145,7 @@ export function ExpenseForm({
   }
 
   return (
-    <form onSubmit={save} className="space-y-5 pb-2">
+    <form onSubmit={save} className="min-w-0 space-y-5 pb-2">
       {/* Amount */}
       <div className="rounded-xl bg-muted/60 p-4">
         <Label htmlFor="amount" className="text-xs text-muted-foreground">Amount</Label>
@@ -198,7 +198,7 @@ export function ExpenseForm({
           className="h-11"
           required
         />
-        <div className="-mx-1 flex gap-2 overflow-x-auto px-1 pb-1 pt-1 [scrollbar-width:none]">
+        <div className="grid grid-cols-4 gap-2 pt-1">
           {CATEGORIES.map((c) => {
             const Icon = c.icon
             const active = category === c.id
@@ -209,12 +209,12 @@ export function ExpenseForm({
                 onClick={() => setCategory(c.id)}
                 aria-pressed={active}
                 className={cn(
-                  "flex shrink-0 items-center gap-1.5 rounded-full border px-3 py-1.5 text-sm transition",
+                  "flex min-w-0 flex-col items-center gap-1 rounded-xl border px-1 py-2 text-xs transition",
                   active ? "border-primary bg-primary text-primary-foreground" : "bg-background hover:bg-muted"
                 )}
               >
                 <Icon className="size-4" />
-                {c.label}
+                <span className="w-full truncate text-center">{c.label}</span>
               </button>
             )
           })}

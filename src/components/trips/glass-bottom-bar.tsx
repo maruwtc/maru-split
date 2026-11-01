@@ -33,16 +33,16 @@ export function GlassBottomBar({
         onClick={() => onTabChange(id)}
         aria-current={active ? "page" : undefined}
         className={cn(
-          "relative flex h-14 flex-1 flex-col items-center justify-center gap-0.5 rounded-full text-[11px] font-medium transition-all duration-300",
+          "relative flex h-11 flex-1 flex-col items-center justify-center gap-0.5 rounded-full text-[10px] font-medium transition-all duration-300",
           active
-            ? "bg-foreground/[0.08] text-foreground shadow-[inset_0_1px_0_rgb(255_255_255/0.5)] dark:bg-white/10 dark:shadow-[inset_0_1px_0_rgb(255_255_255/0.08)]"
+            ? "bg-foreground/[0.07] text-foreground shadow-[inset_0_1px_0_rgb(255_255_255/0.5)] dark:bg-white/10 dark:shadow-[inset_0_1px_0_rgb(255_255_255/0.08)]"
             : "text-muted-foreground active:scale-95"
         )}
       >
         <span className="relative">
-          <Icon className={cn("size-[22px] transition-transform", active && "scale-105")} strokeWidth={active ? 2.3 : 1.9} />
+          <Icon className={cn("size-[18px] transition-transform", active && "scale-105")} strokeWidth={active ? 2.3 : 1.9} />
           {badge ? (
-            <span className="absolute -right-2.5 -top-1.5 grid h-4 min-w-4 place-items-center rounded-full bg-foreground px-1 text-[10px] font-semibold leading-none text-background ring-2 ring-background/80">
+            <span className="absolute -right-2 -top-1 grid h-3.5 min-w-3.5 place-items-center rounded-full bg-foreground px-1 text-[9px] font-semibold leading-none text-background ring-2 ring-background/80">
               {badge}
             </span>
           ) : null}
@@ -55,15 +55,15 @@ export function GlassBottomBar({
   return (
     <nav
       aria-label="Trip sections"
-      className="pointer-events-none fixed inset-x-0 bottom-0 z-40 flex justify-center px-4 pb-[max(1rem,env(safe-area-inset-bottom))] lg:hidden"
+      className="pointer-events-none fixed inset-x-0 bottom-0 z-40 flex justify-center px-6 pb-[max(0.75rem,env(safe-area-inset-bottom))] lg:hidden"
     >
       <div
         className={cn(
-          "pointer-events-auto relative flex w-full max-w-md items-center gap-1 rounded-full p-1.5",
+          "pointer-events-auto relative flex w-full max-w-sm items-center gap-1 rounded-full p-1",
           // liquid glass: translucent fill, heavy blur + saturation, bright rim, soft drop shadow
-          "border border-white/70 bg-white/70 backdrop-blur-2xl backdrop-saturate-[1.8]",
+          "border border-white/50 bg-white/35 backdrop-blur-xl backdrop-saturate-[1.8]",
           "shadow-[0_10px_40px_-8px_rgb(0_0_0/0.25),inset_0_1px_0_rgb(255_255_255/0.9),inset_0_-1px_0_rgb(0_0_0/0.04)]",
-          "dark:border-white/15 dark:bg-zinc-900/65 dark:shadow-[0_10px_40px_-8px_rgb(0_0_0/0.7),inset_0_1px_0_rgb(255_255_255/0.12)]"
+          "dark:border-white/10 dark:bg-zinc-900/35 dark:shadow-[0_10px_40px_-8px_rgb(0_0_0/0.7),inset_0_1px_0_rgb(255_255_255/0.12)]"
         )}
       >
         {/* sheen */}
@@ -74,9 +74,9 @@ export function GlassBottomBar({
           type="button"
           onClick={onAdd}
           aria-label="Add expense"
-          className="grid size-14 shrink-0 place-items-center rounded-full bg-primary text-primary-foreground shadow-[0_6px_20px_-4px_rgb(0_0_0/0.45),inset_0_1px_0_rgb(255_255_255/0.25)] transition active:scale-90"
+          className="grid size-11 shrink-0 place-items-center rounded-full bg-primary text-primary-foreground shadow-[0_6px_20px_-4px_rgb(0_0_0/0.45),inset_0_1px_0_rgb(255_255_255/0.25)] transition active:scale-90"
         >
-          <Plus className="size-6" strokeWidth={2.4} />
+          <Plus className="size-5" strokeWidth={2.4} />
         </button>
         {tabButton(ITEMS[2])}
       </div>
