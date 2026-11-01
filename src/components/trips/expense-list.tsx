@@ -1,7 +1,7 @@
 "use client"
 
 import { formatDay } from "@/lib/date"
-import { Check, Receipt } from "lucide-react"
+import { Check, Receipt, StickyNote } from "lucide-react"
 import { MemberAvatar } from "@/components/member-avatar"
 import { categoryById } from "@/lib/categories"
 import { formatMoney } from "@/lib/money"
@@ -72,6 +72,7 @@ export function ExpenseList({
                     ? -myShare
                     : 0
                 const isForeign = e.currency !== trip.base_currency
+                const isNote = Number(e.amount) === 0
                 return (
                   <li key={e.id}>
                     <button
@@ -82,13 +83,24 @@ export function ExpenseList({
                         allSettled && "opacity-60"
                       )}
                     >
-                      <span className={cn("grid size-10 shrink-0 place-items-center rounded-xl", cat.className)}>
-                        <Icon className="size-5" />
+                      <span
+                        className={cn(
+                          "grid size-10 shrink-0 place-items-center rounded-xl",
+                          isNote ? "bg-yellow-400/20 text-yellow-700 dark:text-yellow-400" : cat.className
+                        )}
+                      >
+                        {isNote ? <StickyNote className="size-5" /> : <Icon className="size-5" />}
                       </span>
                       <span className="min-w-0 flex-1">
                         <span className="block truncate font-medium">{e.description}</span>
                         <span className="mt-0.5 flex items-center gap-1.5 text-xs text-muted-foreground">
                           {payer ? <MemberAvatar member={payer} className="size-4 [&_[data-slot=avatar-fallback]]:text-[8px]" /> : null}
+                          {isNote ? (
+                            <span className="truncate">
+                              {iPaid ? "You" : payer?.display_name ?? "Someone"}
+                              {e.notes ? ` · ${e.notes}` : ""}
+                            </span>
+                          ) : (
                           <span className="truncate">
                             {iPaid ? "You" : payer?.display_name ?? "Someone"} paid ·{" "}
                             {settledCount > 0 && !allSettled
@@ -97,8 +109,12 @@ export function ExpenseList({
                                 ? "everyone"
                                 : `${e.expense_splits.length} ${e.expense_splits.length === 1 ? "person" : "people"}`}
                           </span>
+                          )}
                         </span>
                       </span>
+                      {isNote ? (
+                        <span className="shrink-0 rounded-full bg-muted px-2 py-0.5 text-[11px] font-medium text-muted-foreground">Note</span>
+                      ) : (
                       <span className="shrink-0 text-right">
                         <span className="block font-semibold tabular-nums">{formatMoney(Number(e.amount), e.currency)}</span>
                         {allSettled ? (
@@ -118,6 +134,7 @@ export function ExpenseList({
                           <span className="block text-xs text-muted-foreground">not involved</span>
                         ) : null}
                       </span>
+                      )}
                     </button>
                   </li>
                 )

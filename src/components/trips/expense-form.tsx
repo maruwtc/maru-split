@@ -93,6 +93,8 @@ export function ExpenseForm({
   const [deleting, setDeleting] = useState(false)
 
   const amountNum = Number(amount) || 0
+  // No amount → a note / remark: no split, no effect on balances.
+  const isNote = amountNum <= 0
   const orderedSelected = members.map((m) => m.id).filter((id) => selected.includes(id))
   const numericInputs = Object.fromEntries(
     orderedSelected.map((id) => [id, inputs[id] === undefined || inputs[id] === "" ? (mode === "shares" ? 1 : 0) : Number(inputs[id])])
@@ -166,12 +168,11 @@ export function ExpenseForm({
 
   async function save(e: React.FormEvent) {
     e.preventDefault()
-    if (amountNum <= 0) return toast.error("Enter an amount")
-    if (!description.trim()) return toast.error("Add a description")
-    if (!paidBy) return toast.error("Choose who paid")
-    if (orderedSelected.length === 0) return toast.error("Pick at least one person to split with")
-    if (diffCents !== 0) return toast.error("Split amounts must add up to the total")
-    const rate = isForeign ? Number(fxRate) : 1
+    if (!description.trim()) return toast.error(isNote ? "Write the note" : "Add a description")
+    if (!paidBy) return toast.error(isNote ? "Choose who added it" : "Choose who paid")
+    if (!isNote && orderedSelected.length === 0) return toast.error("Pick at least one person to split with")
+    if (!isNote && diffCents !== 0) return toast.error("Split amounts must add up to the total")
+    const rate = isForeign && !isNote ? Number(fxRate) : 1
     if (!(rate > 0)) return toast.error("Enter a valid exchange rate")
 
     setSaving(true)
@@ -181,14 +182,14 @@ export function ExpenseForm({
       p_expense_id: expense?.id ?? null,
       p_description: description.trim(),
       p_category: category,
-      p_amount: amountNum,
+      p_amount: isNote ? 0 : amountNum,
       p_currency: currency,
       p_fx_rate: rate,
       p_paid_by: paidBy,
       p_split_mode: mode,
       p_spent_at: spentAt,
       p_notes: notes.trim() || null,
-      p_splits: orderedSelected.map((id) => ({
+      p_splits: isNote ? [] : orderedSelected.map((id) => ({
         member_id: id,
         share: shares[id] ?? 0,
         weight: mode === "shares" ? numericInputs[id] : null,
@@ -231,10 +232,12 @@ export function ExpenseForm({
             value={amount}
             onChange={(e) => setAmount(e.target.value)}
             className="h-12 bg-background text-2xl font-semibold tabular-nums md:text-2xl"
-            required
           />
         </div>
-        {isForeign ? (
+        {isNote ? (
+          <p className="mt-2 text-xs text-muted-foreground">No amount? It&apos;ll be saved as a note — handy for reminders and remarks.</p>
+        ) : null}
+        {isForeign && !isNote ? (
           <div className="mt-3 flex items-center gap-2 text-sm text-muted-foreground">
             <span className="shrink-0">1 {currency} =</span>
             <Input
@@ -256,7 +259,7 @@ export function ExpenseForm({
             </span>
           </div>
         ) : null}
-        {isForeign ? (
+        {isForeign && !isNote ? (
           <div className="mt-1.5 flex min-h-5 items-center gap-1.5 text-xs text-muted-foreground">
             {rateMode === "manual" ? (
               <>
@@ -322,7 +325,7 @@ export function ExpenseForm({
 
       {/* Paid by */}
       <div className="space-y-2">
-        <Label>Paid by</Label>
+        <Label>{isNote ? "Added by" : "Paid by"}</Label>
         <div className="flex flex-wrap gap-2">
           {members.map((m) => {
             const active = paidBy === m.id
@@ -354,6 +357,7 @@ export function ExpenseForm({
       </div>
 
       {/* Split */}
+      {!isNote ? (
       <div className="space-y-3">
         <div className="flex items-center justify-between gap-2">
           <Label>Split between</Label>
@@ -436,9 +440,10 @@ export function ExpenseForm({
           </p>
         ) : null}
       </div>
+      ) : null}
 
       {/* Paid back */}
-      {debtors.length > 0 ? (
+      {!isNote && debtors.length > 0 ? (
         <div className="space-y-2">
           <div className="flex items-center justify-between gap-2">
             <Label>Paid back</Label>
@@ -503,7 +508,7 @@ export function ExpenseForm({
         ) : null}
         <Button type="submit" size="lg" className="h-12 flex-1 text-base" disabled={saving || deleting}>
           {saving ? <Loader2 className="animate-spin" /> : null}
-          {expense ? "Save changes" : "Add expense"}
+          {isNote ? (expense ? "Save note" : "Add note") : expense ? "Save changes" : "Add expense"}
         </Button>
       </div>
     </form>

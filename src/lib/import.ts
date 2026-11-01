@@ -48,6 +48,8 @@ export interface ParsedRow {
     | { kind: "exact"; shares: Record<string, number> }
     | { kind: "weights"; weights: Record<string, number> }
   errors: string[]
+  /** Row has a description but no amount — can be imported as a note. */
+  isNote?: boolean
 }
 
 // ---------------------------------------------------------------------------
@@ -349,7 +351,16 @@ export function parseRows(grid: Grid, map: Mapping, opts: ImportOptions): Parsed
     const description = cellText(get(map.description))
     // Skip summary rows like "Total" with no description, or rows with no amount at all.
     if (amountRaw === null) {
-      if (description) out.push(emptyRow(r, description, lastDate, opts, ["No amount — row skipped"]))
+      if (description && !/^(total|sum|subtotal|合計|合计|總計|总计|小計|小计|總數|总数)$/i.test(description)) {
+        const d = map.date !== null ? parseDate(get(map.date), opts.defaultYear) : null
+        if (d) lastDate = d
+        const note = emptyRow(r, description, d ?? lastDate, opts, [])
+        note.isNote = true
+        note.payerName = cellText(get(map.paidBy)) || null
+        note.notes = cellText(get(map.notes)) || null
+        note.category = guessCategory(cellText(get(map.category)), description)
+        out.push(note)
+      }
       continue
     }
     if (/^(total|sum|subtotal|合計|合计|總計|总计|小計|小计|總數|总数)$/i.test(description)) continue
@@ -454,7 +465,7 @@ export function collectNames(rows: ParsedRow[]): string[] {
     if (k && !set.has(k)) set.set(k, n.trim())
   }
   for (const r of rows) {
-    if (r.errors.some((e) => e.includes("skipped"))) continue
+    if (r.isNote) continue
     add(r.payerName)
     if (r.split.kind === "equal") r.split.names.forEach(add)
     if (r.split.kind === "exact") Object.keys(r.split.shares).forEach(add)

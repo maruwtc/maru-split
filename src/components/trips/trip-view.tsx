@@ -213,7 +213,13 @@ export function TripView({
         <div className="rounded-2xl border bg-card p-4">
           <div className="text-xs text-muted-foreground">Trip total</div>
           <div className="mt-1 text-lg font-semibold tabular-nums md:text-2xl">{formatMoney(total, trip.base_currency)}</div>
-          <div className="text-xs text-muted-foreground">{expenses.length} expenses</div>
+          <div className="text-xs text-muted-foreground">
+            {(() => {
+              const n = expenses.filter((e) => Number(e.amount) > 0).length
+              const notes = expenses.length - n
+              return `${n} ${n === 1 ? "expense" : "expenses"}${notes ? ` · ${notes} ${notes === 1 ? "note" : "notes"}` : ""}`
+            })()}
+          </div>
         </div>
         <div className="rounded-2xl border bg-card p-4">
           <div className="text-xs text-muted-foreground">

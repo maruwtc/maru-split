@@ -80,6 +80,7 @@ export function ImportDialog({
   const [dailyAuto, setDailyAuto] = useState(true)
   const [dayRates, setDayRates] = useState<Record<string, number | null>>({})
   const [excluded, setExcluded] = useState<Set<number>>(new Set())
+  const [notesIn, setNotesIn] = useState<Set<number>>(new Set()) // price-less rows to import as notes
   const [skipDuplicates, setSkipDuplicates] = useState(true)
   const [busy, setBusy] = useState(false)
   const [progress, setProgress] = useState(0)
@@ -107,12 +108,16 @@ export function ImportDialog({
   )
   const isDuplicate = (r: ParsedRow) => existingKeys.has(`${r.date}|${r.amount.toFixed(2)}|${r.description.trim().toLowerCase()}`)
 
-  const included = importable.filter((r) => !excluded.has(r.rowNumber) && !(skipDuplicates && isDuplicate(r)))
+  const includedNotes = rows.filter((r) => r.isNote && notesIn.has(r.rowNumber))
+  const included = [
+    ...importable.filter((r) => !excluded.has(r.rowNumber) && !(skipDuplicates && isDuplicate(r))),
+    ...includedNotes,
+  ]
   const duplicates = importable.filter(isDuplicate).length
 
   // Rows in another currency without a rate in the sheet → that day's market rate.
   const dayKey = (r: ParsedRow) => `${r.currency}|${r.date}`
-  const foreignRows = included.filter((r) => r.currency !== trip.base_currency && !r.fxRate)
+  const foreignRows = included.filter((r) => r.amount > 0 && r.currency !== trip.base_currency && !r.fxRate)
   const autoKeys = dailyAuto ? [...new Set(foreignRows.map(dayKey))] : []
   const pendingKeys = autoKeys.filter((k) => !(k in dayRates))
   const ratesLoading = step === "review" && pendingKeys.length > 0
@@ -226,6 +231,26 @@ export function ImportDialog({
       const queue = [...included]
       const worker = async () => {
         for (let r = queue.shift(); r; r = queue.shift()) {
+          if (r.isNote) {
+            const { error } = await supabase.rpc("save_expense", {
+              p_trip_id: trip.id,
+              p_expense_id: null,
+              p_description: r.description.slice(0, 200),
+              p_category: r.category,
+              p_amount: 0,
+              p_currency: trip.base_currency,
+              p_fx_rate: 1,
+              p_paid_by: (r.payerName && idFor(r.payerName)) || defaultPayer,
+              p_split_mode: "equal",
+              p_spent_at: r.date,
+              p_notes: r.notes,
+              p_splits: [],
+            })
+            if (error) failures.push(`Row ${r.rowNumber}: ${error.message}`)
+            else ok++
+            setProgress((p) => p + 1)
+            continue
+          }
           const split = resolveSplit(r, idFor, allIds)
           const payer = (r.payerName && idFor(r.payerName)) || defaultPayer
           if ("error" in split || !payer) {
@@ -440,7 +465,7 @@ export function ImportDialog({
 
             <p className="text-sm text-muted-foreground">
               Found <span className="font-medium text-foreground">{importable.length}</span> expenses
-              {rows.length > importable.length ? ` (${rows.length - importable.length} rows without an amount skipped)` : ""}.
+              {rows.some((r) => r.isNote) ? ` (+ ${rows.filter((r) => r.isNote).length} without an amount, which you can import as notes)` : ""}.
             </p>
 
             <div className="flex gap-2">
@@ -548,9 +573,10 @@ export function ImportDialog({
 
             <ul className="max-h-[45dvh] divide-y overflow-y-auto rounded-xl border">
               {rows.map((r) => {
-                const skip = r.amount <= 0
-                const dup = skipDuplicates && isDuplicate(r)
-                const off = skip || dup || excluded.has(r.rowNumber)
+                const note = !!r.isNote
+                const skip = r.amount <= 0 && !note
+                const dup = !note && skipDuplicates && isDuplicate(r)
+                const off = note ? !notesIn.has(r.rowNumber) : skip || dup || excluded.has(r.rowNumber)
                 const Icon = categoryById(r.category).icon
                 const payer = r.payerName ?? members.find((m) => m.id === defaultPayer)?.display_name
                 return (
@@ -562,7 +588,7 @@ export function ImportDialog({
                       disabled={skip || dup}
                       checked={!off}
                       onChange={() =>
-                        setExcluded((s) => {
+                        (note ? setNotesIn : setExcluded)((s) => {
                           const n = new Set(s)
                           if (n.has(r.rowNumber)) n.delete(r.rowNumber)
                           else n.add(r.rowNumber)
@@ -574,11 +600,15 @@ export function ImportDialog({
                       <div className="flex items-baseline gap-2">
                         <Icon className="size-3.5 shrink-0 self-center text-muted-foreground" />
                         <span className="min-w-0 flex-1 truncate text-sm font-medium">{r.description}</span>
-                        {!skip ? <span className="shrink-0 text-sm font-semibold tabular-nums">{formatMoney(r.amount, r.currency)}</span> : null}
+                        {note ? (
+                          <span className="shrink-0 rounded-full bg-muted px-2 py-0.5 text-[11px] font-medium text-muted-foreground">Note</span>
+                        ) : !skip ? (
+                          <span className="shrink-0 text-sm font-semibold tabular-nums">{formatMoney(r.amount, r.currency)}</span>
+                        ) : null}
                       </div>
                       <div className="truncate text-xs text-muted-foreground">
                         Row {r.rowNumber} · {formatDate(r.date)}
-                        {!skip ? ` · ${payer ?? "?"} paid · ${splitSummary(r)}` : ""}
+                        {note ? " · no amount — tick to import as a note" : !skip ? ` · ${payer ?? "?"} paid · ${splitSummary(r)}` : ""}
                         {dup ? " · already imported" : ""}
                       </div>
                       {r.errors.map((e) => (
@@ -593,7 +623,9 @@ export function ImportDialog({
             </ul>
 
             <div className="flex items-baseline justify-between text-sm">
-              <span className="text-muted-foreground">{included.length} expenses</span>
+              <span className="text-muted-foreground">
+                {included.length - includedNotes.length} expenses{includedNotes.length ? ` + ${includedNotes.length} ${includedNotes.length === 1 ? "note" : "notes"}` : ""}
+              </span>
               <span className="font-semibold tabular-nums">≈ {formatMoney(totalBase, trip.base_currency)}</span>
             </div>
 
@@ -607,7 +639,7 @@ export function ImportDialog({
               </Button>
               <Button size="lg" className="h-12 flex-1 text-base" disabled={busy || ratesLoading || !included.length || missingRate.length > 0} onClick={runImport}>
                 {busy ? <Loader2 className="animate-spin" /> : <Upload />}
-                {busy ? `Importing ${progress}/${included.length}…` : ratesLoading ? "Getting rates…" : `Import ${included.length} expenses`}
+                {busy ? `Importing ${progress}/${included.length}…` : ratesLoading ? "Getting rates…" : `Import ${included.length} ${!includedNotes.length ? "expenses" : includedNotes.length === included.length ? "notes" : "items"}`}
               </Button>
             </div>
           </>
