@@ -1,6 +1,7 @@
 "use client"
 
 import { useMemo, useState } from "react"
+import { AddPersonChip } from "./add-person-chip"
 import { Check, Loader2, Trash2 } from "lucide-react"
 import { toast } from "sonner"
 import { Button } from "@/components/ui/button"
@@ -24,12 +25,13 @@ const today = () => {
 
 export function ExpenseForm({
   trip,
-  members,
+  members: baseMembers,
   expense,
   defaultPayer,
   defaultCurrency,
   onDone,
   onCurrencyUsed,
+  onMemberAdded,
 }: {
   trip: Trip
   members: Member[]
@@ -38,7 +40,14 @@ export function ExpenseForm({
   defaultCurrency?: string
   onDone: (saved: boolean) => void
   onCurrencyUsed?: (currency: string) => void
+  onMemberAdded?: () => void
 }) {
+  // People added from inside the form show up immediately.
+  const [added, setAdded] = useState<Member[]>([])
+  const members = useMemo(
+    () => [...baseMembers, ...added.filter((a) => !baseMembers.some((m) => m.id === a.id))],
+    [baseMembers, added]
+  )
   const currencyOptions = useMemo(
     () => [trip.base_currency, ...Object.keys(trip.fx_rates ?? {})],
     [trip.base_currency, trip.fx_rates]
@@ -51,12 +60,12 @@ export function ExpenseForm({
   )
   const [description, setDescription] = useState(expense?.description ?? "")
   const [category, setCategory] = useState(expense?.category ?? "food")
-  const [paidBy, setPaidBy] = useState(expense?.paid_by ?? defaultPayer ?? members[0]?.id)
+  const [paidBy, setPaidBy] = useState(expense?.paid_by ?? defaultPayer ?? baseMembers[0]?.id)
   const [spentAt, setSpentAt] = useState(expense?.spent_at ?? today())
   const [notes, setNotes] = useState(expense?.notes ?? "")
   const [mode, setMode] = useState<SplitMode>(expense?.split_mode ?? "equal")
   const [selected, setSelected] = useState<string[]>(
-    expense ? expense.expense_splits.map((s) => s.member_id) : members.map((m) => m.id)
+    expense ? expense.expense_splits.map((s) => s.member_id) : baseMembers.map((m) => m.id)
   )
   const [inputs, setInputs] = useState<Record<string, string>>(() => {
     const init: Record<string, string> = {}
@@ -234,6 +243,14 @@ export function ExpenseForm({
               </button>
             )
           })}
+          <AddPersonChip
+            tripId={trip.id}
+            onAdded={(m) => {
+              setAdded((a) => [...a, m])
+              setSelected((sel) => [...sel, m.id])
+              onMemberAdded?.()
+            }}
+          />
         </div>
       </div>
 

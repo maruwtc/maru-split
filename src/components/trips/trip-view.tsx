@@ -17,6 +17,7 @@ import { MemberAvatar } from "@/components/member-avatar"
 import { ResponsiveDialog } from "@/components/responsive-dialog"
 import { BalancesPanel } from "./balances-panel"
 import { ExpenseForm } from "./expense-form"
+import { AddPersonChip } from "./add-person-chip"
 import { ExpenseList } from "./expense-list"
 import { GlassBottomBar, type TripTab } from "./glass-bottom-bar"
 import { MembersPanel } from "./members-panel"
@@ -138,8 +139,19 @@ export function TripView({
     </div>
   )
 
+  const soloPrompt = members.length === 1 && (
+    <div className="rounded-2xl border border-dashed bg-muted/40 p-4">
+      <p className="font-medium">Who&apos;s travelling with you?</p>
+      <p className="mb-3 text-sm text-muted-foreground">
+        Add people now — they don&apos;t need an account. Later they can sign in with Google and link to their name.
+      </p>
+      <AddPersonChip tripId={trip.id} onAdded={() => router.refresh()} className="w-fit bg-background" />
+    </div>
+  )
+
   const expensesSection = (
     <div className="space-y-4">
+      {soloPrompt}
       {filterChips}
       <ExpenseList trip={trip} expenses={filtered} membersById={membersById} myMemberId={myMemberId} onSelect={openEdit} />
     </div>
@@ -261,6 +273,7 @@ export function TripView({
               if (saved) router.refresh()
             }}
             onCurrencyUsed={setLastCurrency}
+            onMemberAdded={() => router.refresh()}
           />
         ) : null}
       </ResponsiveDialog>

@@ -2,11 +2,18 @@
 
 import { useState, useSyncExternalStore } from "react"
 import { useRouter } from "next/navigation"
-import { Check, Copy, Link2, Loader2, Pencil, Share2, Trash2, UserPlus, X } from "lucide-react"
+import { Check, Copy, Link2, Loader2, MoreHorizontal, Pencil, Send, Share2, Trash2, UserCheck, UserPlus, X } from "lucide-react"
 import { toast } from "sonner"
 import { Badge } from "@/components/ui/badge"
 import { Button } from "@/components/ui/button"
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card"
+import {
+  DropdownMenu,
+  DropdownMenuContent,
+  DropdownMenuItem,
+  DropdownMenuSeparator,
+  DropdownMenuTrigger,
+} from "@/components/ui/dropdown-menu"
 import { Input } from "@/components/ui/input"
 import { MemberAvatar } from "@/components/member-avatar"
 import { createClient } from "@/lib/supabase/client"
@@ -67,6 +74,37 @@ export function MembersPanel({
     router.refresh()
   }
 
+  const personalUrl = (m: Member) => `${inviteUrl}?as=${m.id}`
+
+  async function sendPersonalInvite(m: Member) {
+    const url = personalUrl(m)
+    if (navigator.share) {
+      try {
+        await navigator.share({ title: trip.name, text: `${m.display_name}, join “${trip.name}” on Maru Split`, url })
+        return
+      } catch {
+        /* cancelled — fall back to copy */
+      }
+    }
+    await navigator.clipboard.writeText(url)
+    toast.success(`Invite link for ${m.display_name} copied`, {
+      description: "When they sign in with Google, they're linked to this person.",
+    })
+  }
+
+  async function claim(m: Member) {
+    if (
+      !confirm(
+        `Link your account to “${m.display_name}”?\n\nEverything recorded under your current name in this trip moves to ${m.display_name}.`
+      )
+    )
+      return
+    const { error } = await createClient().rpc("claim_member", { p_member_id: m.id })
+    if (error) return toast.error(error.message)
+    toast.success(`You're now ${m.display_name}`)
+    router.refresh()
+  }
+
   async function copyInvite() {
     await navigator.clipboard.writeText(inviteUrl)
     setCopied(true)
@@ -96,7 +134,7 @@ export function MembersPanel({
         </CardHeader>
         <CardContent className="space-y-2 px-4">
           <p className="text-sm text-muted-foreground">
-            Anyone with this link can sign in with Google and join. They can claim a name you&apos;ve already added.
+            Anyone with this link can sign in with Google and join. People without an account can tap “Invite” next to their name to get a personal link that signs them in as that person.
           </p>
           <div className="flex gap-2">
             <Input readOnly value={inviteUrl} className="h-10 font-mono text-xs" onFocus={(e) => e.target.select()} />
@@ -142,23 +180,50 @@ export function MembersPanel({
                         <Badge variant="outline" className="mt-0.5 text-[10px] font-normal">no account yet</Badge>
                       )}
                     </div>
-                    <Button
-                      size="icon"
-                      variant="ghost"
-                      className="size-8"
-                      onClick={() => {
-                        setEditing(m.id)
-                        setEditName(m.display_name)
-                      }}
-                      aria-label={`Rename ${m.display_name}`}
-                    >
-                      <Pencil className="size-4" />
-                    </Button>
                     {!m.user_id ? (
-                      <Button size="icon" variant="ghost" className="size-8" onClick={() => remove(m)} aria-label={`Remove ${m.display_name}`}>
-                        <Trash2 className="size-4" />
+                      <Button
+                        size="sm"
+                        variant="outline"
+                        className="h-8 shrink-0"
+                        onClick={() => sendPersonalInvite(m)}
+                        aria-label={`Send invite link to ${m.display_name}`}
+                      >
+                        <Send className="size-3.5" /> Invite
                       </Button>
                     ) : null}
+                    <DropdownMenu>
+                      <DropdownMenuTrigger asChild>
+                        <Button size="icon" variant="ghost" className="size-8 shrink-0" aria-label={`Options for ${m.display_name}`}>
+                          <MoreHorizontal className="size-4" />
+                        </Button>
+                      </DropdownMenuTrigger>
+                      <DropdownMenuContent align="end" className="w-56">
+                        <DropdownMenuItem
+                          onSelect={() => {
+                            setEditing(m.id)
+                            setEditName(m.display_name)
+                          }}
+                        >
+                          <Pencil /> Rename
+                        </DropdownMenuItem>
+                        {!m.user_id ? (
+                          <>
+                            <DropdownMenuItem onSelect={() => sendPersonalInvite(m)}>
+                              <Send /> Send personal invite link
+                            </DropdownMenuItem>
+                            {myMemberId ? (
+                              <DropdownMenuItem onSelect={() => claim(m)}>
+                                <UserCheck /> This is me — link my account
+                              </DropdownMenuItem>
+                            ) : null}
+                            <DropdownMenuSeparator />
+                            <DropdownMenuItem variant="destructive" onSelect={() => remove(m)}>
+                              <Trash2 /> Remove
+                            </DropdownMenuItem>
+                          </>
+                        ) : null}
+                      </DropdownMenuContent>
+                    </DropdownMenu>
                   </>
                 )}
               </li>
@@ -169,7 +234,7 @@ export function MembersPanel({
             <Input
               value={newName}
               onChange={(e) => setNewName(e.target.value)}
-              placeholder="Add a person (e.g. Mom)"
+              placeholder="Add someone without an account (e.g. Mom)"
               maxLength={50}
               className="h-10"
             />

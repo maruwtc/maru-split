@@ -17,13 +17,17 @@ export interface TripFormValues {
   start_date: string | null
   end_date: string | null
   fx_rates: Record<string, number>
+  /** Only when creating: names of people without an account. */
+  people?: string[]
 }
 
 export function TripForm({
   initial,
   submitLabel,
   onSubmit,
+  withPeople = false,
 }: {
+  withPeople?: boolean
   initial?: Partial<TripFormValues>
   submitLabel: string
   onSubmit: (v: TripFormValues) => Promise<void>
@@ -37,6 +41,14 @@ export function TripForm({
     Object.entries(initial?.fx_rates ?? {}).map(([currency, rate]) => ({ currency, rate: String(rate) }))
   )
   const [saving, setSaving] = useState(false)
+  const [people, setPeople] = useState<string[]>([])
+  const [person, setPerson] = useState("")
+
+  function addPerson() {
+    const n = person.trim()
+    if (n && !people.includes(n)) setPeople((p) => [...p, n])
+    setPerson("")
+  }
 
   async function handleSubmit(e: React.FormEvent) {
     e.preventDefault()
@@ -54,6 +66,7 @@ export function TripForm({
         start_date: start || null,
         end_date: end || null,
         fx_rates: fx,
+        ...(withPeople ? { people: person.trim() ? [...people, person.trim()] : people } : {}),
       })
     } finally {
       setSaving(false)
@@ -97,6 +110,44 @@ export function TripForm({
           <Input id="end" type="date" value={end} min={start || undefined} onChange={(e) => setEnd(e.target.value)} className="h-11" />
         </div>
       </div>
+
+      {withPeople ? (
+        <div className="space-y-2">
+          <Label htmlFor="person">Travelling with</Label>
+          <div className="flex gap-2">
+            <Input
+              id="person"
+              value={person}
+              maxLength={50}
+              placeholder="Add a name, e.g. Mom"
+              onChange={(e) => setPerson(e.target.value)}
+              onKeyDown={(e) => {
+                if (e.key === "Enter") {
+                  e.preventDefault()
+                  addPerson()
+                }
+              }}
+              className="h-11"
+            />
+            <Button type="button" variant="outline" className="h-11 shrink-0" onClick={addPerson} disabled={!person.trim()}>
+              <Plus /> Add
+            </Button>
+          </div>
+          {people.length ? (
+            <div className="flex flex-wrap gap-1.5">
+              {people.map((p) => (
+                <span key={p} className="flex items-center gap-1 rounded-full bg-secondary py-1 pl-3 pr-1 text-sm">
+                  {p}
+                  <button type="button" onClick={() => setPeople((ps) => ps.filter((x) => x !== p))} className="grid size-5 place-items-center rounded-full hover:bg-background" aria-label={`Remove ${p}`}>
+                    <X className="size-3" />
+                  </button>
+                </span>
+              ))}
+            </div>
+          ) : null}
+          <p className="text-xs text-muted-foreground">No account needed. They can sign in later and link to their name.</p>
+        </div>
+      ) : null}
 
       <div className="space-y-2">
         <Label htmlFor="base">Settle-up currency</Label>
