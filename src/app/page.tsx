@@ -5,6 +5,7 @@ import {
   CircleCheck,
   FileSpreadsheet,
   Globe2,
+  Landmark,
   Link2,
   Lock,
   Percent,
@@ -57,16 +58,21 @@ const HIGHLIGHTS = [
     body: "“Train booked for 23/12, seats 12A–C.” Keep reminders in the same timeline as your spending — they never touch the totals.",
   },
   {
+    icon: Landmark,
+    title: "Match your bank statement",
+    body: "Card charged HK$532.10, not the estimated HK$530.32? Enter the exact amount and everyone's share is rescaled to the cent — no more “close enough” settle-ups.",
+    wide: true,
+    demo: "statement",
+  },
+  {
     icon: Percent,
     title: "Split it your way",
     body: "Equally, by exact amounts or by shares (2 : 1 for the family room). Always adds up to the cent.",
-    wide: true,
   },
   {
     icon: Smartphone,
     title: "Made for one thumb",
     body: "A floating bar with a big + to log a spend in seconds on your phone, and a roomy two-column view on desktop. Light and dark.",
-    wide: true,
   },
 ] as const
 
@@ -91,6 +97,26 @@ function FxDemo() {
       </div>
       <div className="mt-1.5 flex items-center gap-1 text-xs text-muted-foreground">
         <Check className="size-3" /> Rate for 22/12/2026
+      </div>
+    </div>
+  )
+}
+
+function StatementDemo() {
+  return (
+    <div className="mt-5 grid gap-2 text-sm sm:grid-cols-[1fr_auto_1fr] sm:items-center">
+      <div className="rounded-xl border bg-background p-3 shadow-sm">
+        <div className="text-xs text-muted-foreground">Day&apos;s rate estimate</div>
+        <div className="font-semibold tabular-nums">≈ HK$530.32</div>
+        <div className="text-[11px] text-muted-foreground">CN¥486 × 1.0912</div>
+      </div>
+      <ArrowRight className="mx-auto size-4 rotate-90 text-muted-foreground sm:rotate-0" />
+      <div className="rounded-xl border bg-background p-3 shadow-sm">
+        <div className="flex items-center gap-1 text-xs text-muted-foreground">
+          <Landmark className="size-3" /> Bank statement
+        </div>
+        <div className="font-semibold tabular-nums">HK$532.10</div>
+        <div className="text-[11px] text-negative tabular-nums">+HK$1.78 · shares rescaled</div>
       </div>
     </div>
   )
@@ -206,7 +232,7 @@ export default function Home() {
           </h1>
           <p className="max-w-xl text-lg text-muted-foreground md:text-xl">
             Log what you spend on the road, tap who it was for, and Maru Split works out who owes whom — in the
-            currency you settle in, at the rate of the day you paid.
+            currency you settle in, at the rate of the day you paid — or the exact amount on your bank statement.
           </p>
           <div className="flex flex-wrap items-center gap-3">
             <Button asChild size="lg" className="h-12 rounded-full px-6 text-base">
@@ -247,6 +273,7 @@ export default function Home() {
                 <p className="mt-1.5 text-sm text-muted-foreground">{h.body}</p>
                 {"demo" in h && h.demo === "fx" ? <FxDemo /> : null}
                 {"demo" in h && h.demo === "link" ? <LinkDemo /> : null}
+                {"demo" in h && h.demo === "statement" ? <StatementDemo /> : null}
               </div>
             )
           })}
