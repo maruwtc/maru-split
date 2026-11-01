@@ -1,8 +1,9 @@
 "use client"
 
 import { DateInput } from "@/components/date-input"
+import { FormActionBar } from "@/components/form-action-bar"
 import { useState } from "react"
-import { Loader2, Plus, X } from "lucide-react"
+import { Loader2, Plus, Trash2, X } from "lucide-react"
 import { Button } from "@/components/ui/button"
 import { Input } from "@/components/ui/input"
 import { Label } from "@/components/ui/label"
@@ -26,9 +27,12 @@ export function TripForm({
   initial,
   submitLabel,
   onSubmit,
+  onDelete,
   withPeople = false,
 }: {
   withPeople?: boolean
+  /** Shows a delete button in the action bar (trip settings, creator only). */
+  onDelete?: () => unknown
   initial?: Partial<TripFormValues>
   submitLabel: string
   onSubmit: (v: TripFormValues) => Promise<void>
@@ -75,7 +79,7 @@ export function TripForm({
   }
 
   return (
-    <form onSubmit={handleSubmit} className="space-y-5 pb-2">
+    <form onSubmit={handleSubmit} className="min-w-0 space-y-5">
       <div className="space-y-2">
         <Label htmlFor="trip-name">Trip name</Label>
         <Input id="trip-name" value={name} onChange={(e) => setName(e.target.value)} placeholder="Yunnan 2026" required maxLength={100} className="h-11" />
@@ -193,10 +197,17 @@ export function TripForm({
         ))}
       </div>
 
-      <Button type="submit" size="lg" className="h-12 w-full text-base" disabled={saving || !name.trim()}>
-        {saving ? <Loader2 className="animate-spin" /> : null}
-        {submitLabel}
-      </Button>
+      <FormActionBar>
+        {onDelete ? (
+          <Button type="button" variant="outline" size="lg" className="h-12" onClick={() => onDelete()} disabled={saving} aria-label="Delete trip">
+            <Trash2 className="text-destructive" />
+          </Button>
+        ) : null}
+        <Button type="submit" size="lg" className="h-12 flex-1 text-base" disabled={saving || !name.trim()}>
+          {saving ? <Loader2 className="animate-spin" /> : null}
+          {submitLabel}
+        </Button>
+      </FormActionBar>
     </form>
   )
 }

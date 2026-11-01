@@ -1,6 +1,7 @@
 "use client"
 
 import { DateInput } from "@/components/date-input"
+import { FormActionBar } from "@/components/form-action-bar"
 import { useEffect, useMemo, useState } from "react"
 import { AddPersonChip } from "./add-person-chip"
 import { useIsDesktop } from "@/hooks/use-media-query"
@@ -501,7 +502,7 @@ export function ExpenseForm({
       </div>
 
       {/* Action bar: stays pinned to the bottom of the sheet / dialog while scrolling */}
-      <div className="sticky bottom-0 z-10 -mx-4 flex gap-2 border-t bg-background px-4 pt-3 pb-[max(1rem,env(safe-area-inset-bottom))] md:-mx-6 md:px-6 md:pb-6">
+      <FormActionBar>
         {expense ? (
           <Button type="button" variant="outline" size="lg" className="h-12" onClick={remove} disabled={deleting || saving} aria-label="Delete expense">
             {deleting ? <Loader2 className="animate-spin" /> : <Trash2 className="text-destructive" />}
@@ -511,7 +512,7 @@ export function ExpenseForm({
           {saving ? <Loader2 className="animate-spin" /> : null}
           {isNote ? (expense ? "Save note" : "Add note") : expense ? "Save changes" : "Add expense"}
         </Button>
-      </div>
+      </FormActionBar>
     </form>
   )
 }

@@ -303,10 +303,17 @@ export function TripView({
         myMemberId={myMemberId}
       />
 
-      <ResponsiveDialog open={settingsOpen} onOpenChange={setSettingsOpen} title="Trip settings">
+      <ResponsiveDialog
+        open={settingsOpen}
+        onOpenChange={setSettingsOpen}
+        title="Trip settings"
+        description="Name, dates and the currencies used on this trip."
+        flush
+      >
         <TripForm
           initial={trip}
-          submitLabel="Save"
+          submitLabel="Save changes"
+          onDelete={trip.created_by === currentUserId ? deleteTrip : undefined}
           onSubmit={async (values) => {
             const { error } = await createClient().from("trips").update(values).eq("id", trip.id)
             if (error) {

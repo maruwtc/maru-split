@@ -19,7 +19,7 @@ export function NewTripButton() {
       <Button onClick={() => setOpen(true)} className="shrink-0">
         <Plus /> New trip
       </Button>
-      <ResponsiveDialog open={open} onOpenChange={setOpen} title="New trip" description="Add who’s coming — they can link their Google account later.">
+      <ResponsiveDialog open={open} onOpenChange={setOpen} title="New trip" description="Add who’s coming — they can link their Google account later." flush>
         <TripForm
           submitLabel="Create trip"
           withPeople
