@@ -3,6 +3,7 @@
 import { DateInput } from "@/components/date-input"
 import { useMemo, useState } from "react"
 import { AddPersonChip } from "./add-person-chip"
+import { useIsDesktop } from "@/hooks/use-media-query"
 import { Check, Loader2, Trash2 } from "lucide-react"
 import { toast } from "sonner"
 import { Button } from "@/components/ui/button"
@@ -45,6 +46,8 @@ export function ExpenseForm({
   onMemberAdded?: () => void
   onSettledChange?: () => void
 }) {
+  // On phones, don't pop the keyboard while the sheet is opening — it shoves the sheet up.
+  const isDesktop = useIsDesktop()
   // People added from inside the form show up immediately.
   const [added, setAdded] = useState<Member[]>([])
   const members = useMemo(
@@ -196,7 +199,7 @@ export function ExpenseForm({
             inputMode="decimal"
             step="0.01"
             min="0"
-            autoFocus={!expense}
+            autoFocus={!expense && isDesktop}
             placeholder="0.00"
             value={amount}
             onChange={(e) => setAmount(e.target.value)}
