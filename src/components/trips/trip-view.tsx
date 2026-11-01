@@ -3,7 +3,7 @@
 import { useMemo, useState } from "react"
 import Link from "next/link"
 import { useRouter } from "next/navigation"
-import { ChevronLeft, Download, MoreVertical, Plus, Settings, Trash2 } from "lucide-react"
+import { ChevronLeft, Download, FileSpreadsheet, MoreVertical, Plus, Settings, Trash2 } from "lucide-react"
 import { toast } from "sonner"
 import { Button } from "@/components/ui/button"
 import {
@@ -20,6 +20,7 @@ import { ExpenseForm } from "./expense-form"
 import { AddPersonChip } from "./add-person-chip"
 import { ExpenseList } from "./expense-list"
 import { GlassBottomBar, type TripTab } from "./glass-bottom-bar"
+import { ImportDialog } from "./import-dialog"
 import { MembersPanel } from "./members-panel"
 import { TripForm } from "./trip-form"
 import { computeBalances, suggestTransfers } from "@/lib/balances"
@@ -46,6 +47,7 @@ export function TripView({
   const [formOpen, setFormOpen] = useState(false)
   const [editing, setEditing] = useState<Expense | null>(null)
   const [settingsOpen, setSettingsOpen] = useState(false)
+  const [importOpen, setImportOpen] = useState(false)
   const [filter, setFilter] = useState<string | null>(null)
   const [tab, setTab] = useState<TripTab>("expenses")
   const [lastCurrency, setLastCurrency] = useState<string | undefined>(
@@ -153,6 +155,11 @@ export function TripView({
     <div className="space-y-4">
       {soloPrompt}
       {filterChips}
+      {expenses.length === 0 ? (
+        <Button variant="outline" className="w-full" onClick={() => setImportOpen(true)}>
+          <FileSpreadsheet /> Import expenses from Excel
+        </Button>
+      ) : null}
       <ExpenseList trip={trip} expenses={filtered} membersById={membersById} myMemberId={myMemberId} onSelect={openEdit} />
     </div>
   )
@@ -188,6 +195,7 @@ export function TripView({
           </DropdownMenuTrigger>
           <DropdownMenuContent align="end">
             <DropdownMenuItem onSelect={() => setSettingsOpen(true)}><Settings /> Trip settings</DropdownMenuItem>
+            <DropdownMenuItem onSelect={() => setImportOpen(true)}><FileSpreadsheet /> Import from Excel</DropdownMenuItem>
             <DropdownMenuItem onSelect={exportCsv} disabled={!expenses.length}><Download /> Export CSV</DropdownMenuItem>
             {trip.created_by === currentUserId ? (
               <>
@@ -277,6 +285,15 @@ export function TripView({
           />
         ) : null}
       </ResponsiveDialog>
+
+      <ImportDialog
+        open={importOpen}
+        onOpenChange={setImportOpen}
+        trip={trip}
+        members={members}
+        expenses={expenses}
+        myMemberId={myMemberId}
+      />
 
       <ResponsiveDialog open={settingsOpen} onOpenChange={setSettingsOpen} title="Trip settings">
         <TripForm
