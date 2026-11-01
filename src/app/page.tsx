@@ -19,7 +19,6 @@ import {
 } from "lucide-react"
 import { Button } from "@/components/ui/button"
 import { Logo } from "@/components/logo"
-import { ThemeToggle } from "@/components/theme-toggle"
 import { cn } from "@/lib/utils"
 
 const HIGHLIGHTS = [
@@ -214,7 +213,6 @@ export default function Home() {
       <header className="flex items-center justify-between">
         <Logo />
         <div className="flex items-center gap-1">
-          <ThemeToggle />
           <Button asChild variant="ghost" size="sm">
             <Link href="/login">Sign in</Link>
           </Button>

@@ -1,7 +1,6 @@
 import Link from "next/link"
 import type { User } from "@supabase/supabase-js"
 import { Logo } from "@/components/logo"
-import { ThemeToggle } from "@/components/theme-toggle"
 import { UserMenu } from "@/components/user-menu"
 
 export function AppHeader({ user, children }: { user: User; children?: React.ReactNode }) {
@@ -12,7 +11,6 @@ export function AppHeader({ user, children }: { user: User; children?: React.Rea
           <Logo className="[&>span:last-child]:hidden sm:[&>span:last-child]:inline" />
         </Link>
         <div className="min-w-0 flex-1">{children}</div>
-        <ThemeToggle />
         <UserMenu
           name={user.user_metadata?.full_name ?? user.email ?? "You"}
           email={user.email ?? ""}
