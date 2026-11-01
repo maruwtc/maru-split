@@ -1,7 +1,7 @@
 "use client"
 
 import { formatDate } from "@/lib/date"
-import { useMemo, useState } from "react"
+import { useEffect, useMemo, useState } from "react"
 import { useRouter } from "next/navigation"
 import { AlertTriangle, ArrowLeft, Check, FileSpreadsheet, Loader2, Upload } from "lucide-react"
 import { toast } from "sonner"
@@ -25,6 +25,7 @@ import {
   type ParsedRow,
 } from "@/lib/import"
 import { addPeople } from "@/lib/members"
+import { fetchDayRate, roundRate } from "@/lib/fx"
 import { formatMoney } from "@/lib/money"
 import { createClient } from "@/lib/supabase/client"
 import type { Expense, Member, Trip } from "@/lib/types"
@@ -76,6 +77,8 @@ export function ImportDialog({
   const [people, setPeople] = useState<Record<string, string>>({}) // nameKey -> member id | NEW
   const [defaultPayer, setDefaultPayer] = useState(myMemberId ?? members[0]?.id ?? "")
   const [rates, setRates] = useState<Record<string, string>>({})
+  const [dailyAuto, setDailyAuto] = useState(true)
+  const [dayRates, setDayRates] = useState<Record<string, number | null>>({})
   const [excluded, setExcluded] = useState<Set<number>>(new Set())
   const [skipDuplicates, setSkipDuplicates] = useState(true)
   const [busy, setBusy] = useState(false)
@@ -107,11 +110,38 @@ export function ImportDialog({
   const included = importable.filter((r) => !excluded.has(r.rowNumber) && !(skipDuplicates && isDuplicate(r)))
   const duplicates = importable.filter(isDuplicate).length
 
-  // Currencies needing a rate (not base, not in trip settings, not given by the sheet).
-  const needRates = [...new Set(included.filter((r) => r.currency !== trip.base_currency && !r.fxRate).map((r) => r.currency))]
+  // Rows in another currency without a rate in the sheet → that day's market rate.
+  const dayKey = (r: ParsedRow) => `${r.currency}|${r.date}`
+  const foreignRows = included.filter((r) => r.currency !== trip.base_currency && !r.fxRate)
+  const autoKeys = dailyAuto ? [...new Set(foreignRows.map(dayKey))] : []
+  const pendingKeys = autoKeys.filter((k) => !(k in dayRates))
+  const ratesLoading = step === "review" && pendingKeys.length > 0
+  const dayRateFor = (r: ParsedRow) => (dailyAuto ? dayRates[dayKey(r)] ?? null : null)
+  const pendingSig = pendingKeys.join(",")
+
+  useEffect(() => {
+    if (step !== "review" || !pendingSig) return
+    let cancelled = false
+    for (const k of pendingSig.split(",")) {
+      const [c, d] = k.split("|")
+      fetchDayRate(c, trip.base_currency, d).then((info) => {
+        if (!cancelled) setDayRates((m) => ({ ...m, [k]: info ? roundRate(info.rate) : null }))
+      })
+    }
+    return () => {
+      cancelled = true
+    }
+  }, [step, pendingSig, trip.base_currency])
+
+  // Currencies still needing a typed fallback rate.
+  const needRates = [...new Set(foreignRows.filter((r) => !dayRateFor(r)).map((r) => r.currency))]
   const rateFor = (r: ParsedRow) =>
-    r.currency === trip.base_currency ? 1 : r.fxRate ?? (Number(rates[r.currency]) || Number(trip.fx_rates?.[r.currency]) || 0)
-  const missingRate = needRates.filter((c) => !(Number(rates[c]) > 0) && !(Number(trip.fx_rates?.[c]) > 0))
+    r.currency === trip.base_currency
+      ? 1
+      : r.fxRate ?? dayRateFor(r) ?? (Number(rates[r.currency]) || Number(trip.fx_rates?.[r.currency]) || 0)
+  const missingRate = ratesLoading ? [] : needRates.filter((c) => !(Number(rates[c]) > 0) && !(Number(trip.fx_rates?.[c]) > 0))
+  const autoCurrencies = [...new Set(foreignRows.filter((r) => dayRateFor(r)).map((r) => r.currency))]
+  const autoDays = new Set(foreignRows.filter((r) => dayRateFor(r)).map((r) => r.date)).size
   const totalBase = included.reduce((s, r) => s + r.amount * rateFor(r), 0)
 
   function reset() {
@@ -453,9 +483,32 @@ export function ImportDialog({
 
         {step === "review" ? (
           <>
-            {needRates.length ? (
+            {foreignRows.length ? (
               <div className="space-y-2 rounded-xl bg-muted/50 p-3">
-                <Label>Exchange rates</Label>
+                <div className="flex items-center justify-between gap-2">
+                  <Label>Exchange rates</Label>
+                  <label className="flex items-center gap-1.5 text-xs">
+                    <input type="checkbox" checked={dailyAuto} onChange={(e) => setDailyAuto(e.target.checked)} className="size-3.5 accent-current" />
+                    Each day&apos;s rate
+                  </label>
+                </div>
+                {dailyAuto ? (
+                  <p className="flex items-center gap-1.5 text-xs text-muted-foreground">
+                    {ratesLoading ? (
+                      <><Loader2 className="size-3 animate-spin" /> Getting daily rates…</>
+                    ) : autoCurrencies.length ? (
+                      <><Check className="size-3" /> Using each day&apos;s market rate for {autoCurrencies.join(", ")} ({autoDays} {autoDays === 1 ? "day" : "days"})</>
+                    ) : null}
+                  </p>
+                ) : null}
+                {!ratesLoading && needRates.length && dailyAuto ? (
+                  <p className="text-xs text-amber-600 dark:text-amber-400">Some days&apos; rates aren&apos;t available — enter a fallback:</p>
+                ) : null}
+              </div>
+            ) : null}
+            {!ratesLoading && needRates.length ? (
+              <div className="space-y-2 rounded-xl bg-muted/50 p-3">
+                <Label>{dailyAuto ? "Fallback rates" : "Exchange rates"}</Label>
                 {needRates.map((c) => (
                   <div key={c} className="flex items-center gap-2 text-sm">
                     <span className="w-14 shrink-0 text-muted-foreground">1 {c} =</span>
@@ -552,9 +605,9 @@ export function ImportDialog({
               <Button variant="outline" size="lg" className="h-12" disabled={busy} onClick={() => setStep(names.length ? "people" : "columns")}>
                 <ArrowLeft />
               </Button>
-              <Button size="lg" className="h-12 flex-1 text-base" disabled={busy || !included.length || missingRate.length > 0} onClick={runImport}>
+              <Button size="lg" className="h-12 flex-1 text-base" disabled={busy || ratesLoading || !included.length || missingRate.length > 0} onClick={runImport}>
                 {busy ? <Loader2 className="animate-spin" /> : <Upload />}
-                {busy ? `Importing ${progress}/${included.length}…` : `Import ${included.length} expenses`}
+                {busy ? `Importing ${progress}/${included.length}…` : ratesLoading ? "Getting rates…" : `Import ${included.length} expenses`}
               </Button>
             </div>
           </>

@@ -1,9 +1,11 @@
 "use client"
 
 import { DateInput } from "@/components/date-input"
-import { useMemo, useState } from "react"
+import { useEffect, useMemo, useState } from "react"
 import { AddPersonChip } from "./add-person-chip"
 import { useIsDesktop } from "@/hooks/use-media-query"
+import { fetchDayRate, roundRate, type DayRate } from "@/lib/fx"
+import { formatDate } from "@/lib/date"
 import { Check, Loader2, Trash2 } from "lucide-react"
 import { toast } from "sonner"
 import { Button } from "@/components/ui/button"
@@ -68,6 +70,9 @@ export function ExpenseForm({
   const [category, setCategory] = useState(expense?.category ?? "food")
   const [paidBy, setPaidBy] = useState(expense?.paid_by ?? defaultPayer ?? baseMembers[0]?.id)
   const [spentAt, setSpentAt] = useState(expense?.spent_at ?? today())
+  // "auto": use that day's market rate; "manual": keep what's typed / stored.
+  const [rateMode, setRateMode] = useState<"auto" | "manual">(expense ? "manual" : "auto")
+  const [dayRate, setDayRate] = useState<{ key: string; info: DayRate | null } | null>(null)
   const [notes, setNotes] = useState(expense?.notes ?? "")
   const [mode, setMode] = useState<SplitMode>(expense?.split_mode ?? "equal")
   const [selected, setSelected] = useState<string[]>(
@@ -96,6 +101,27 @@ export function ExpenseForm({
   const shareSumCents = Object.values(shares).reduce((s, v) => s + toCents(v), 0)
   const diffCents = toCents(amountNum) - shareSumCents
   const isForeign = currency !== trip.base_currency
+  const rateKey = `${currency}|${spentAt}`
+  const rateLoading = isForeign && rateMode === "auto" && dayRate?.key !== rateKey
+
+  useEffect(() => {
+    if (!isForeign || rateMode !== "auto" || !spentAt) return
+    let cancelled = false
+    const key = `${currency}|${spentAt}`
+    fetchDayRate(currency, trip.base_currency, spentAt).then((info) => {
+      if (cancelled) return
+      setDayRate({ key, info })
+      setFxRate(String(info ? roundRate(info.rate) : rateFor(currency, trip.base_currency, trip.fx_rates)))
+    })
+    return () => {
+      cancelled = true
+    }
+  }, [currency, spentAt, rateMode, isForeign, trip.base_currency, trip.fx_rates])
+
+  function changeDate(d: string) {
+    setSpentAt(d)
+    if (isForeign) setRateMode("auto")
+  }
 
   function toggleMember(id: string) {
     setSelected((s) => (s.includes(id) ? s.filter((x) => x !== id) : [...s, id]))
@@ -104,6 +130,7 @@ export function ExpenseForm({
   function changeCurrency(c: string) {
     setCurrency(c)
     setFxRate(String(rateFor(c, trip.base_currency, trip.fx_rates)))
+    setRateMode("auto")
   }
 
   // People who owe the payer on this expense.
@@ -216,7 +243,10 @@ export function ExpenseForm({
               step="any"
               min="0"
               value={fxRate}
-              onChange={(e) => setFxRate(e.target.value)}
+              onChange={(e) => {
+                setFxRate(e.target.value)
+                setRateMode("manual")
+              }}
               className="h-8 w-24 bg-background"
               aria-label="Exchange rate"
             />
@@ -224,6 +254,33 @@ export function ExpenseForm({
             <span className="ml-auto shrink-0 font-medium text-foreground tabular-nums">
               ≈ {formatMoney(amountNum * (Number(fxRate) || 0), trip.base_currency)}
             </span>
+          </div>
+        ) : null}
+        {isForeign ? (
+          <div className="mt-1.5 flex min-h-5 items-center gap-1.5 text-xs text-muted-foreground">
+            {rateMode === "manual" ? (
+              <>
+                <span>Custom rate ·</span>
+                <button type="button" className="font-medium text-foreground hover:underline" onClick={() => setRateMode("auto")}>
+                  Use rate for {formatDate(spentAt)}
+                </button>
+              </>
+            ) : rateLoading ? (
+              <>
+                <Loader2 className="size-3 animate-spin" /> Getting rate for {formatDate(spentAt)}…
+              </>
+            ) : dayRate?.info ? (
+              <>
+                <Check className="size-3" />
+                {dayRate.info.latest
+                  ? "Latest rate (date is today or later)"
+                  : dayRate.info.date === spentAt
+                    ? `Rate for ${formatDate(spentAt)}`
+                    : `Rate for ${formatDate(spentAt)} (from ${formatDate(dayRate.info.date)})`}
+              </>
+            ) : (
+              <span className="text-amber-600 dark:text-amber-400">Couldn&apos;t get that day&apos;s rate — using the trip rate. You can type one.</span>
+            )}
           </div>
         ) : null}
       </div>
@@ -430,7 +487,7 @@ export function ExpenseForm({
       <div className="grid gap-3 sm:grid-cols-2">
         <div className="space-y-2">
           <Label htmlFor="spent-at">Date</Label>
-          <DateInput id="spent-at" value={spentAt} onChange={setSpentAt} required />
+          <DateInput id="spent-at" value={spentAt} onChange={changeDate} required />
         </div>
         <div className="space-y-2 sm:col-span-2">
           <Label htmlFor="notes">Notes <span className="font-normal text-muted-foreground">(optional)</span></Label>
