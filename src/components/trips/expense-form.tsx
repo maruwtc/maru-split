@@ -7,7 +7,7 @@ import { AddPersonChip } from "./add-person-chip"
 import { useIsDesktop } from "@/hooks/use-media-query"
 import { fetchDayRate, roundRate, type DayRate } from "@/lib/fx"
 import { formatDate } from "@/lib/date"
-import { Check, Loader2, Trash2 } from "lucide-react"
+import { Check, Landmark, Loader2, Plus, Trash2 } from "lucide-react"
 import { toast } from "sonner"
 import { Button } from "@/components/ui/button"
 import { Input } from "@/components/ui/input"
@@ -299,7 +299,7 @@ export function ExpenseForm({
           showBase ? (
             <div className="mt-3 space-y-1.5 border-t pt-3">
               <Label htmlFor="base-amount" className="text-xs text-muted-foreground">
-                Final {trip.base_currency} amount (bank / card statement)
+                <span className="inline-flex items-center gap-1.5"><Landmark className="size-3.5" /> Bank statement amount ({trip.base_currency})</span>
               </Label>
               <div className="flex items-center gap-2">
                 <Input
@@ -344,9 +344,18 @@ export function ExpenseForm({
             <button
               type="button"
               onClick={() => setShowBase(true)}
-              className="mt-2 text-xs font-medium text-foreground hover:underline"
+              className="mt-3 flex w-full items-center gap-3 rounded-xl border border-dashed border-foreground/25 bg-background px-3 py-2.5 text-left transition hover:border-foreground/50 hover:bg-muted active:scale-[0.99]"
             >
-              + Final {trip.base_currency} amount from statement
+              <span className="grid size-9 shrink-0 place-items-center rounded-lg bg-muted">
+                <Landmark className="size-4" />
+              </span>
+              <span className="min-w-0 flex-1">
+                <span className="block text-sm font-medium">Match bank statement</span>
+                <span className="block text-xs text-muted-foreground">
+                  Charged a different {trip.base_currency} amount? Enter the exact figure.
+                </span>
+              </span>
+              <Plus className="size-4 shrink-0 text-muted-foreground" />
             </button>
           )
         ) : null}
