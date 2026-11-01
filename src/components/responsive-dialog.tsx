@@ -2,6 +2,7 @@
 
 import * as React from "react"
 import { useIsDesktop } from "@/hooks/use-media-query"
+import { cn } from "@/lib/utils"
 import {
   Dialog,
   DialogContent,
@@ -24,19 +25,22 @@ export function ResponsiveDialog({
   title,
   description,
   children,
+  flush = false,
 }: {
   open: boolean
   onOpenChange: (open: boolean) => void
   title: string
   description?: string
   children: React.ReactNode
+  /** No bottom padding — for content with its own sticky footer. */
+  flush?: boolean
 }) {
   const isDesktop = useIsDesktop()
 
   if (isDesktop) {
     return (
       <Dialog open={open} onOpenChange={onOpenChange}>
-        <DialogContent className="max-h-[90vh] overflow-y-auto sm:max-w-lg">
+        <DialogContent className={cn("max-h-[90vh] overflow-y-auto sm:max-w-lg", flush && "pb-0")}>
           <DialogHeader>
             <DialogTitle>{title}</DialogTitle>
             {description ? <DialogDescription>{description}</DialogDescription> : null}
@@ -54,7 +58,7 @@ export function ResponsiveDialog({
           <DrawerTitle>{title}</DrawerTitle>
           {description ? <DrawerDescription>{description}</DrawerDescription> : null}
         </DrawerHeader>
-        <div className="min-w-0 touch-pan-y overflow-x-hidden overflow-y-auto overscroll-contain px-4 pb-safe">{children}</div>
+        <div className={cn("min-w-0 touch-pan-y overflow-x-hidden overflow-y-auto overscroll-contain px-4", !flush && "pb-safe")}>{children}</div>
       </DrawerContent>
     </Drawer>
   )

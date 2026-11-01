@@ -215,7 +215,7 @@ export function ExpenseForm({
   }
 
   return (
-    <form onSubmit={save} className="min-w-0 space-y-5 pb-2">
+    <form onSubmit={save} className="min-w-0 space-y-5">
       {/* Amount */}
       <div className="rounded-xl bg-muted/60 p-4">
         <Label htmlFor="amount" className="text-xs text-muted-foreground">Amount</Label>
@@ -500,7 +500,8 @@ export function ExpenseForm({
         </div>
       </div>
 
-      <div className="flex gap-2 pt-1">
+      {/* Action bar: stays pinned to the bottom of the sheet / dialog while scrolling */}
+      <div className="sticky bottom-0 z-10 -mx-4 flex gap-2 border-t bg-background px-4 pt-3 pb-[max(1rem,env(safe-area-inset-bottom))] md:-mx-6 md:px-6 md:pb-6">
         {expense ? (
           <Button type="button" variant="outline" size="lg" className="h-12" onClick={remove} disabled={deleting || saving} aria-label="Delete expense">
             {deleting ? <Loader2 className="animate-spin" /> : <Trash2 className="text-destructive" />}

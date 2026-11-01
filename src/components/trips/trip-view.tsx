@@ -274,7 +274,7 @@ export function TripView({
         badges={{ balances: transfers.length }}
       />
 
-      <ResponsiveDialog open={formOpen} onOpenChange={setFormOpen} title={editing ? "Edit expense" : "Add expense"}>
+      <ResponsiveDialog open={formOpen} onOpenChange={setFormOpen} title={editing ? "Edit expense" : "Add expense"} flush>
         {formOpen ? (
           <ExpenseForm
             key={editing?.id ?? "new"}
