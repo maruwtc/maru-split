@@ -33,16 +33,16 @@ export function GlassBottomBar({
         onClick={() => onTabChange(id)}
         aria-current={active ? "page" : undefined}
         className={cn(
-          "relative flex h-11 w-16 shrink-0 flex-col items-center justify-center gap-0.5 rounded-full text-[10px] font-medium transition-all duration-300",
+          "relative flex h-12 w-[4.25rem] shrink-0 flex-col items-center justify-center gap-0.5 rounded-full text-[11px] transition-all duration-300",
           active
-            ? "bg-foreground/[0.07] text-foreground shadow-[inset_0_1px_0_rgb(255_255_255/0.5)] dark:bg-white/10 dark:shadow-[inset_0_1px_0_rgb(255_255_255/0.08)]"
-            : "text-muted-foreground active:scale-95"
+            ? "bg-zinc-900/10 font-semibold text-foreground dark:bg-white/15"
+            : "font-medium text-muted-foreground active:scale-95"
         )}
       >
         <span className="relative">
-          <Icon className={cn("size-[18px] transition-transform", active && "scale-105")} strokeWidth={active ? 2.3 : 1.9} />
+          <Icon className="size-5" strokeWidth={active ? 2.4 : 1.8} />
           {badge ? (
-            <span className="absolute -right-2 -top-1 grid h-3.5 min-w-3.5 place-items-center rounded-full bg-foreground px-1 text-[9px] font-semibold leading-none text-background ring-2 ring-background/80">
+            <span className="absolute -right-2.5 -top-1.5 grid h-4 min-w-4 place-items-center rounded-full bg-foreground px-1 text-[10px] font-semibold leading-none text-background">
               {badge}
             </span>
           ) : null}
@@ -59,11 +59,11 @@ export function GlassBottomBar({
     >
       <div
         className={cn(
-          "pointer-events-auto relative flex w-fit items-center gap-0.5 rounded-full p-1",
+          "pointer-events-auto relative flex w-fit items-center gap-1 rounded-full p-1.5",
           // liquid glass: translucent fill, heavy blur + saturation, bright rim, soft drop shadow
-          "border border-white/50 bg-white/35 backdrop-blur-xl backdrop-saturate-[1.8]",
+          "border-2 border-white/70 bg-white/35 backdrop-blur-xl backdrop-saturate-[1.8]",
           "shadow-[0_10px_40px_-8px_rgb(0_0_0/0.25),inset_0_1px_0_rgb(255_255_255/0.9),inset_0_-1px_0_rgb(0_0_0/0.04)]",
-          "dark:border-white/10 dark:bg-zinc-900/35 dark:shadow-[0_10px_40px_-8px_rgb(0_0_0/0.7),inset_0_1px_0_rgb(255_255_255/0.12)]"
+          "dark:border-white/15 dark:bg-zinc-900/35 dark:shadow-[0_10px_40px_-8px_rgb(0_0_0/0.7),inset_0_1px_0_rgb(255_255_255/0.12)]"
         )}
       >
         {/* sheen */}
@@ -74,7 +74,7 @@ export function GlassBottomBar({
           type="button"
           onClick={onAdd}
           aria-label="Add expense"
-          className="mx-1 grid size-11 shrink-0 place-items-center rounded-full bg-primary text-primary-foreground shadow-[0_6px_20px_-4px_rgb(0_0_0/0.45),inset_0_1px_0_rgb(255_255_255/0.25)] transition active:scale-90"
+          className="mx-0.5 grid size-12 shrink-0 place-items-center rounded-full bg-primary text-primary-foreground shadow-[0_6px_20px_-4px_rgb(0_0_0/0.45),inset_0_1px_0_rgb(255_255_255/0.25)] transition active:scale-90"
         >
           <Plus className="size-5" strokeWidth={2.4} />
         </button>
