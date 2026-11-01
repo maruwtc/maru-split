@@ -226,7 +226,7 @@ export function ExpenseForm({
                 aria-pressed={active}
                 className={cn(
                   "flex items-center gap-2 rounded-full border py-1 pl-1 pr-3 text-sm transition",
-                  active ? "border-primary bg-accent ring-2 ring-primary/30" : "hover:bg-muted"
+                  active ? "border-primary bg-accent ring-2 ring-primary/15" : "hover:bg-muted"
                 )}
               >
                 <MemberAvatar member={m} className="size-7" />

@@ -13,12 +13,12 @@ import {
   DropdownMenuSeparator,
   DropdownMenuTrigger,
 } from "@/components/ui/dropdown-menu"
-import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs"
 import { MemberAvatar } from "@/components/member-avatar"
 import { ResponsiveDialog } from "@/components/responsive-dialog"
 import { BalancesPanel } from "./balances-panel"
 import { ExpenseForm } from "./expense-form"
 import { ExpenseList } from "./expense-list"
+import { GlassBottomBar, type TripTab } from "./glass-bottom-bar"
 import { MembersPanel } from "./members-panel"
 import { TripForm } from "./trip-form"
 import { computeBalances, suggestTransfers } from "@/lib/balances"
@@ -46,6 +46,7 @@ export function TripView({
   const [editing, setEditing] = useState<Expense | null>(null)
   const [settingsOpen, setSettingsOpen] = useState(false)
   const [filter, setFilter] = useState<string | null>(null)
+  const [tab, setTab] = useState<TripTab>("expenses")
   const [lastCurrency, setLastCurrency] = useState<string | undefined>(
     expenses[0]?.currency ?? Object.keys(trip.fx_rates ?? {})[0]
   )
@@ -127,7 +128,7 @@ export function TripView({
           onClick={() => setFilter(filter === m.id ? null : m.id)}
           className={cn(
             "flex shrink-0 items-center gap-1.5 rounded-full border py-0.5 pl-0.5 pr-3 text-sm transition",
-            filter === m.id ? "border-primary bg-accent ring-2 ring-primary/30" : "hover:bg-muted"
+            filter === m.id ? "border-primary bg-accent ring-2 ring-primary/15" : "hover:bg-muted"
           )}
         >
           <MemberAvatar member={m} className="size-6 [&_[data-slot=avatar-fallback]]:text-[10px]" />
@@ -158,7 +159,7 @@ export function TripView({
   const membersSection = <MembersPanel trip={trip} members={members} myMemberId={myMemberId} />
 
   return (
-    <main className="mx-auto w-full max-w-6xl flex-1 px-4 pb-28 pt-4 md:px-6 md:pb-12 md:pt-6">
+    <main className="mx-auto w-full max-w-6xl flex-1 px-4 pb-32 pt-4 md:px-6 lg:pb-12 md:pt-6">
       {/* Title row */}
       <div className="mb-4 flex items-center gap-2">
         <Button asChild variant="ghost" size="icon" className="-ml-2 shrink-0" aria-label="Back to trips">
@@ -166,7 +167,7 @@ export function TripView({
         </Button>
         <span className="text-2xl">{trip.emoji}</span>
         <h1 className="min-w-0 flex-1 truncate text-xl font-bold tracking-tight md:text-2xl">{trip.name}</h1>
-        <Button onClick={openNew} className="hidden md:inline-flex">
+        <Button onClick={openNew} className="hidden lg:inline-flex">
           <Plus /> Add expense
         </Button>
         <DropdownMenu>
@@ -222,21 +223,9 @@ export function TripView({
       </div>
 
       {/* Mobile: tabs */}
-      <Tabs defaultValue="expenses" className="lg:hidden">
-        <TabsList className="mb-4 grid h-10 w-full grid-cols-3">
-          <TabsTrigger value="expenses">Expenses</TabsTrigger>
-          <TabsTrigger value="balances">
-            Balances
-            {transfers.length ? (
-              <span className="ml-1 rounded-full bg-primary px-1.5 text-[10px] text-primary-foreground">{transfers.length}</span>
-            ) : null}
-          </TabsTrigger>
-          <TabsTrigger value="people">People</TabsTrigger>
-        </TabsList>
-        <TabsContent value="expenses">{expensesSection}</TabsContent>
-        <TabsContent value="balances">{balancesSection}</TabsContent>
-        <TabsContent value="people">{membersSection}</TabsContent>
-      </Tabs>
+      <div className="lg:hidden">
+        {tab === "expenses" ? expensesSection : tab === "balances" ? balancesSection : membersSection}
+      </div>
 
       {/* Desktop: two columns */}
       <div className="hidden gap-6 lg:grid lg:grid-cols-[minmax(0,1fr)_360px]">
@@ -247,14 +236,16 @@ export function TripView({
         </aside>
       </div>
 
-      {/* Mobile floating action button */}
-      <Button
-        onClick={openNew}
-        size="lg"
-        className="fixed bottom-[max(1.25rem,env(safe-area-inset-bottom))] right-5 z-40 h-14 rounded-full px-6 text-base shadow-lg shadow-primary/30 md:hidden"
-      >
-        <Plus className="size-5" /> Add expense
-      </Button>
+      {/* Phone / tablet: floating glass bottom bar */}
+      <GlassBottomBar
+        tab={tab}
+        onTabChange={(t) => {
+          setTab(t)
+          window.scrollTo({ top: 0, behavior: "smooth" })
+        }}
+        onAdd={openNew}
+        badges={{ balances: transfers.length }}
+      />
 
       <ResponsiveDialog open={formOpen} onOpenChange={setFormOpen} title={editing ? "Edit expense" : "Add expense"}>
         {formOpen ? (

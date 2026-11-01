@@ -53,7 +53,7 @@ export function JoinTrip({
                   onClick={() => setChoice(value)}
                   className={cn(
                     "flex w-full items-center gap-3 rounded-xl border p-3 text-left text-sm transition",
-                    active ? "border-primary bg-accent ring-2 ring-primary/30" : "hover:bg-muted"
+                    active ? "border-primary bg-accent ring-2 ring-primary/15" : "hover:bg-muted"
                   )}
                 >
                   {m.id ? <MemberAvatar member={{ id: m.id, display_name: m.display_name }} /> : null}

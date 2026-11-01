@@ -77,7 +77,7 @@ export function TripForm({
               onClick={() => setEmoji(em)}
               className={cn(
                 "grid size-10 place-items-center rounded-lg border text-xl transition",
-                emoji === em ? "border-primary bg-accent ring-2 ring-primary/30" : "hover:bg-muted"
+                emoji === em ? "border-primary bg-accent ring-2 ring-primary/15" : "hover:bg-muted"
               )}
               aria-pressed={emoji === em}
             >
