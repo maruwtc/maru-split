@@ -350,9 +350,17 @@ begin
 end;
 $$;
 
-revoke execute on function public.get_invite(text) from anon;
-revoke execute on function public.join_trip(text, uuid) from anon;
-revoke execute on function public.save_expense(uuid, uuid, text, text, numeric, text, numeric, uuid, text, date, text, jsonb) from anon;
+-- Functions are executable by PUBLIC by default; lock them down.
+revoke execute on function public.handle_new_user() from public, anon, authenticated;
+revoke execute on function public.add_trip_creator() from public, anon, authenticated;
+revoke execute on function public.is_trip_member(uuid) from public, anon;
+revoke execute on function public.get_invite(text) from public, anon;
+revoke execute on function public.join_trip(text, uuid) from public, anon;
+revoke execute on function public.save_expense(uuid, uuid, text, text, numeric, text, numeric, uuid, text, date, text, jsonb) from public, anon;
+grant execute on function public.is_trip_member(uuid) to authenticated;
+grant execute on function public.get_invite(text) to authenticated;
+grant execute on function public.join_trip(text, uuid) to authenticated;
+grant execute on function public.save_expense(uuid, uuid, text, text, numeric, text, numeric, uuid, text, date, text, jsonb) to authenticated;
 
 -- Members may only rename each other; linking accounts happens via join_trip().
 revoke update on public.trip_members from authenticated;
