@@ -1,5 +1,6 @@
 "use client"
 
+import { formatDay } from "@/lib/date"
 import { Receipt } from "lucide-react"
 import { MemberAvatar } from "@/components/member-avatar"
 import { categoryById } from "@/lib/categories"
@@ -7,10 +8,7 @@ import { formatMoney } from "@/lib/money"
 import type { Expense, Member, Trip } from "@/lib/types"
 import { cn } from "@/lib/utils"
 
-function dayLabel(d: string) {
-  const date = new Date(d + "T00:00:00")
-  return date.toLocaleDateString("en", { weekday: "short", month: "short", day: "numeric" })
-}
+const dayLabel = formatDay
 
 export function ExpenseList({
   trip,
@@ -52,7 +50,7 @@ export function ExpenseList({
         const dayTotal = items.reduce((s, e) => s + Number(e.amount) * Number(e.fx_rate), 0)
         return (
           <section key={day}>
-            <div className="mb-2 flex items-baseline justify-between px-1 text-xs font-medium uppercase tracking-wide text-muted-foreground">
+            <div className="mb-2 flex items-baseline justify-between px-1 text-xs font-medium tracking-wide text-muted-foreground">
               <span>{dayLabel(day)}</span>
               <span className="tabular-nums">{formatMoney(dayTotal, trip.base_currency)}</span>
             </div>

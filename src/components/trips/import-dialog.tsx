@@ -1,5 +1,6 @@
 "use client"
 
+import { formatDate } from "@/lib/date"
 import { useMemo, useState } from "react"
 import { useRouter } from "next/navigation"
 import { AlertTriangle, ArrowLeft, Check, FileSpreadsheet, Loader2, Upload } from "lucide-react"
@@ -523,7 +524,7 @@ export function ImportDialog({
                         {!skip ? <span className="shrink-0 text-sm font-semibold tabular-nums">{formatMoney(r.amount, r.currency)}</span> : null}
                       </div>
                       <div className="truncate text-xs text-muted-foreground">
-                        Row {r.rowNumber} · {r.date}
+                        Row {r.rowNumber} · {formatDate(r.date)}
                         {!skip ? ` · ${payer ?? "?"} paid · ${splitSummary(r)}` : ""}
                         {dup ? " · already imported" : ""}
                       </div>

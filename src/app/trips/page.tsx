@@ -1,4 +1,5 @@
 import Link from "next/link"
+import { formatRange } from "@/lib/date"
 import { CalendarDays, Plane, Users } from "lucide-react"
 import { AppHeader } from "@/components/app-header"
 import { NewTripButton } from "@/components/trips/new-trip-button"
@@ -7,12 +8,6 @@ import { formatMoney } from "@/lib/money"
 
 export const metadata = { title: "Your trips" }
 
-function formatRange(start: string | null, end: string | null) {
-  if (!start) return null
-  const f = (d: string) => new Date(d + "T00:00:00").toLocaleDateString("en", { month: "short", day: "numeric" })
-  const year = new Date(start + "T00:00:00").getFullYear()
-  return end && end !== start ? `${f(start)} – ${f(end)}, ${year}` : `${f(start)}, ${year}`
-}
 
 export default async function TripsPage() {
   const { supabase, user } = await requireUser("/trips")

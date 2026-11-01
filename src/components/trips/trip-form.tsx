@@ -1,5 +1,6 @@
 "use client"
 
+import { DateInput } from "@/components/date-input"
 import { useState } from "react"
 import { Loader2, Plus, X } from "lucide-react"
 import { Button } from "@/components/ui/button"
@@ -103,11 +104,11 @@ export function TripForm({
       <div className="grid grid-cols-2 gap-3">
         <div className="space-y-2">
           <Label htmlFor="start">Start</Label>
-          <Input id="start" type="date" value={start} onChange={(e) => setStart(e.target.value)} className="h-11" />
+          <DateInput id="start" value={start} onChange={setStart} />
         </div>
         <div className="space-y-2">
           <Label htmlFor="end">End</Label>
-          <Input id="end" type="date" value={end} min={start || undefined} onChange={(e) => setEnd(e.target.value)} className="h-11" />
+          <DateInput id="end" value={end} min={start || undefined} onChange={setEnd} />
         </div>
       </div>
 

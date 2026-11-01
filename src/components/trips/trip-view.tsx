@@ -1,5 +1,6 @@
 "use client"
 
+import { formatDate } from "@/lib/date"
 import { useMemo, useState } from "react"
 import Link from "next/link"
 import { useRouter } from "next/navigation"
@@ -81,7 +82,7 @@ export function TripView({
     const esc = (v: string | number) => `"${String(v).replaceAll('"', '""')}"`
     const header = ["Date", "Description", "Category", "Amount", "Currency", "FX rate", `Amount (${trip.base_currency})`, "Paid by", ...members.map((m) => `${m.display_name} share`)]
     const rows = [...expenses].reverse().map((e) => [
-      e.spent_at,
+      formatDate(e.spent_at),
       e.description,
       categoryById(e.category).label,
       Number(e.amount).toFixed(2),

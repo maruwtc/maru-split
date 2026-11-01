@@ -1,5 +1,6 @@
 "use client"
 
+import { DateInput } from "@/components/date-input"
 import { useMemo, useState } from "react"
 import { AddPersonChip } from "./add-person-chip"
 import { Check, Loader2, Trash2 } from "lucide-react"
@@ -342,7 +343,7 @@ export function ExpenseForm({
       <div className="grid gap-3 sm:grid-cols-2">
         <div className="space-y-2">
           <Label htmlFor="spent-at">Date</Label>
-          <Input id="spent-at" type="date" value={spentAt} onChange={(e) => setSpentAt(e.target.value)} className="h-11" required />
+          <DateInput id="spent-at" value={spentAt} onChange={setSpentAt} required />
         </div>
         <div className="space-y-2 sm:col-span-2">
           <Label htmlFor="notes">Notes <span className="font-normal text-muted-foreground">(optional)</span></Label>
