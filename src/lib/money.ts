@@ -21,6 +21,12 @@ export function formatMoney(amount: number, currency: string, opts?: { signed?: 
   return amount < 0 && !opts?.signed ? "−" + s : s
 }
 
+/** An expense's value in the trip's base currency: statement amount if recorded, else amount × rate. */
+export function baseTotal(e: { amount: number | string; fx_rate: number | string; base_amount?: number | string | null }) {
+  const b = Number(e.base_amount)
+  return b > 0 ? b : Number(e.amount) * Number(e.fx_rate)
+}
+
 /** Rate to convert 1 unit of `currency` into the trip's base currency. */
 export function rateFor(currency: string, base: string, rates: Record<string, number>) {
   if (currency === base) return 1

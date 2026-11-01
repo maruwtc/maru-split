@@ -4,7 +4,7 @@ import { CalendarDays, Plane, Users } from "lucide-react"
 import { AppHeader } from "@/components/app-header"
 import { NewTripButton } from "@/components/trips/new-trip-button"
 import { requireUser } from "@/lib/supabase/server"
-import { formatMoney } from "@/lib/money"
+import { baseTotal, formatMoney } from "@/lib/money"
 
 export const metadata = { title: "Your trips" }
 
@@ -14,7 +14,7 @@ export default async function TripsPage() {
 
   const { data: trips } = await supabase
     .from("trips")
-    .select("id, name, emoji, base_currency, start_date, end_date, created_at, trip_members(count), expenses(amount, fx_rate)")
+    .select("id, name, emoji, base_currency, start_date, end_date, created_at, trip_members(count), expenses(amount, fx_rate, base_amount)")
     .order("start_date", { ascending: false, nullsFirst: true })
     .order("created_at", { ascending: false })
 
@@ -44,8 +44,8 @@ export default async function TripsPage() {
         ) : (
           <ul className="grid gap-3 sm:grid-cols-2 lg:grid-cols-3">
             {trips.map((t) => {
-              const total = (t.expenses as { amount: number; fx_rate: number }[]).reduce(
-                (s, e) => s + Number(e.amount) * Number(e.fx_rate),
+              const total = (t.expenses as { amount: number; fx_rate: number; base_amount: number | null }[]).reduce(
+                (s, e) => s + baseTotal(e),
                 0
               )
               const members = (t.trip_members as { count: number }[])[0]?.count ?? 0

@@ -26,7 +26,7 @@ import { MembersPanel } from "./members-panel"
 import { TripForm } from "./trip-form"
 import { computeBalances, suggestTransfers } from "@/lib/balances"
 import { categoryById } from "@/lib/categories"
-import { formatMoney } from "@/lib/money"
+import { baseTotal, formatMoney } from "@/lib/money"
 import { createClient } from "@/lib/supabase/client"
 import type { Expense, Member, Settlement, Trip } from "@/lib/types"
 import { cn } from "@/lib/utils"
@@ -63,7 +63,7 @@ export function TripView({
   const transfers = useMemo(() => suggestTransfers(balances), [balances])
   const myBalance = balances.find((b) => b.memberId === myMemberId)
 
-  const total = expenses.reduce((s, e) => s + Number(e.amount) * Number(e.fx_rate), 0)
+  const total = expenses.reduce((s, e) => s + baseTotal(e), 0)
   const filtered = filter
     ? expenses.filter((e) => e.paid_by === filter || e.expense_splits.some((s) => s.member_id === filter))
     : expenses
@@ -88,7 +88,7 @@ export function TripView({
       Number(e.amount).toFixed(2),
       e.currency,
       e.fx_rate,
-      (Number(e.amount) * Number(e.fx_rate)).toFixed(2),
+      baseTotal(e).toFixed(2),
       membersById.get(e.paid_by)?.display_name ?? "",
       ...members.map((m) => {
         const s = e.expense_splits.find((x) => x.member_id === m.id)

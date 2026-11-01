@@ -4,7 +4,7 @@ import { formatDay } from "@/lib/date"
 import { Check, Receipt, StickyNote } from "lucide-react"
 import { MemberAvatar } from "@/components/member-avatar"
 import { categoryById } from "@/lib/categories"
-import { formatMoney } from "@/lib/money"
+import { baseTotal, formatMoney } from "@/lib/money"
 import type { Expense, Member, Trip } from "@/lib/types"
 import { cn } from "@/lib/utils"
 
@@ -47,7 +47,7 @@ export function ExpenseList({
   return (
     <div className="space-y-5">
       {[...groups.entries()].map(([day, items]) => {
-        const dayTotal = items.reduce((s, e) => s + Number(e.amount) * Number(e.fx_rate), 0)
+        const dayTotal = items.reduce((s, e) => s + baseTotal(e), 0)
         return (
           <section key={day}>
             <div className="mb-2 flex items-baseline justify-between px-1 text-xs font-medium tracking-wide text-muted-foreground">
@@ -128,7 +128,8 @@ export function ExpenseList({
                           </span>
                         ) : isForeign ? (
                           <span className="block text-xs tabular-nums text-muted-foreground">
-                            ≈ {formatMoney(Number(e.amount) * Number(e.fx_rate), trip.base_currency)}
+                            {Number(e.base_amount) > 0 ? "" : "≈ "}
+                            {formatMoney(baseTotal(e), trip.base_currency)}
                           </span>
                         ) : myMemberId && !iPaid && myShare === 0 ? (
                           <span className="block text-xs text-muted-foreground">not involved</span>

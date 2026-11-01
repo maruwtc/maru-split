@@ -73,6 +73,9 @@ export function ExpenseForm({
   const [spentAt, setSpentAt] = useState(expense?.spent_at ?? today())
   // "auto": use that day's market rate; "manual": keep what's typed / stored.
   const [rateMode, setRateMode] = useState<"auto" | "manual">(expense ? "manual" : "auto")
+  // Final amount actually charged in the trip currency (bank statement), optional.
+  const [baseAmount, setBaseAmount] = useState(expense?.base_amount ? String(expense.base_amount) : "")
+  const [showBase, setShowBase] = useState(Boolean(expense?.base_amount))
   const [dayRate, setDayRate] = useState<{ key: string; info: DayRate | null } | null>(null)
   const [notes, setNotes] = useState(expense?.notes ?? "")
   const [mode, setMode] = useState<SplitMode>(expense?.split_mode ?? "equal")
@@ -104,6 +107,9 @@ export function ExpenseForm({
   const shareSumCents = Object.values(shares).reduce((s, v) => s + toCents(v), 0)
   const diffCents = toCents(amountNum) - shareSumCents
   const isForeign = currency !== trip.base_currency
+  const estimated = amountNum * (Number(fxRate) || 0)
+  const statementSet = isForeign && Number(baseAmount) > 0
+  const statementDiff = statementSet ? Math.round((Number(baseAmount) - estimated) * 100) / 100 : 0
   const rateKey = `${currency}|${spentAt}`
   const rateLoading = isForeign && rateMode === "auto" && dayRate?.key !== rateKey
 
@@ -186,6 +192,7 @@ export function ExpenseForm({
       p_amount: isNote ? 0 : amountNum,
       p_currency: currency,
       p_fx_rate: rate,
+      p_base_amount: isForeign && !isNote && Number(baseAmount) > 0 ? Number(baseAmount) : null,
       p_paid_by: paidBy,
       p_split_mode: mode,
       p_spent_at: spentAt,
@@ -256,7 +263,8 @@ export function ExpenseForm({
             />
             <span className="shrink-0">{trip.base_currency}</span>
             <span className="ml-auto shrink-0 font-medium text-foreground tabular-nums">
-              ≈ {formatMoney(amountNum * (Number(fxRate) || 0), trip.base_currency)}
+              {statementSet ? "" : "≈ "}
+              {formatMoney(statementSet ? Number(baseAmount) : estimated, trip.base_currency)}
             </span>
           </div>
         ) : null}
@@ -286,6 +294,61 @@ export function ExpenseForm({
               <span className="text-amber-600 dark:text-amber-400">Couldn&apos;t get that day&apos;s rate — using the trip rate. You can type one.</span>
             )}
           </div>
+        ) : null}
+        {isForeign && !isNote ? (
+          showBase ? (
+            <div className="mt-3 space-y-1.5 border-t pt-3">
+              <Label htmlFor="base-amount" className="text-xs text-muted-foreground">
+                Final {trip.base_currency} amount (bank / card statement)
+              </Label>
+              <div className="flex items-center gap-2">
+                <Input
+                  id="base-amount"
+                  type="number"
+                  inputMode="decimal"
+                  step="0.01"
+                  min="0"
+                  placeholder={estimated > 0 ? estimated.toFixed(2) : "0.00"}
+                  value={baseAmount}
+                  onChange={(e) => setBaseAmount(e.target.value)}
+                  className="h-10 bg-background tabular-nums"
+                />
+                <Button
+                  type="button"
+                  variant="ghost"
+                  size="sm"
+                  className="shrink-0 text-muted-foreground"
+                  onClick={() => {
+                    setBaseAmount("")
+                    setShowBase(false)
+                  }}
+                >
+                  Clear
+                </Button>
+              </div>
+              {statementSet && amountNum > 0 ? (
+                <p className="text-xs text-muted-foreground">
+                  Effective rate {roundRate(Number(baseAmount) / amountNum)} ·{" "}
+                  <span className={cn(statementDiff > 0 ? "text-negative" : statementDiff < 0 ? "text-positive" : "")}>
+                    {statementDiff === 0
+                      ? "matches the estimate"
+                      : `${formatMoney(statementDiff, trip.base_currency, { signed: true })} vs estimate`}
+                  </span>
+                  . Balances use this amount.
+                </p>
+              ) : (
+                <p className="text-xs text-muted-foreground">Use the exact amount charged — shares are scaled to match it.</p>
+              )}
+            </div>
+          ) : (
+            <button
+              type="button"
+              onClick={() => setShowBase(true)}
+              className="mt-2 text-xs font-medium text-foreground hover:underline"
+            >
+              + Final {trip.base_currency} amount from statement
+            </button>
+          )
         ) : null}
       </div>
 

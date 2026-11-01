@@ -38,6 +38,8 @@ export interface Expense {
   amount: number
   currency: string
   fx_rate: number
+  /** Final amount actually charged in the trip currency (e.g. bank statement). Overrides amount × fx_rate. */
+  base_amount?: number | null
   paid_by: string
   split_mode: SplitMode
   spent_at: string

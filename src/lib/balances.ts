@@ -1,5 +1,5 @@
 import type { Expense, Member, Settlement } from "./types"
-import { fromCents, toCents } from "./money"
+import { baseTotal, fromCents, toCents } from "./money"
 
 export interface MemberBalance {
   memberId: string
@@ -12,6 +12,33 @@ export interface Transfer {
   from: string
   to: string
   amount: number
+}
+
+/**
+ * Each person's share converted to base-currency cents, scaled so the shares
+ * add up exactly to the expense's base total (largest-remainder rounding).
+ */
+function baseShares(e: Expense, totalCents: number) {
+  const out = new Map<string, number>()
+  const amount = Number(e.amount)
+  if (!(amount > 0) || e.expense_splits.length === 0) return out
+  const raw = e.expense_splits.map((s) => ({ id: s.member_id, v: (Number(s.share) / amount) * totalCents }))
+  let rest = totalCents
+  for (const r of raw) {
+    const f = Math.floor(r.v)
+    out.set(r.id, (out.get(r.id) ?? 0) + f)
+    rest -= f
+  }
+  raw
+    .map((r, i) => ({ ...r, i, frac: r.v - Math.floor(r.v) }))
+    .sort((a, b) => b.frac - a.frac || a.i - b.i)
+    .forEach((r) => {
+      if (rest > 0) {
+        out.set(r.id, (out.get(r.id) ?? 0) + 1)
+        rest -= 1
+      }
+    })
+  return out
 }
 
 export function computeBalances(
@@ -29,10 +56,11 @@ export function computeBalances(
   }
 
   for (const e of expenses) {
-    const rate = Number(e.fx_rate)
-    paid.set(e.paid_by, (paid.get(e.paid_by) ?? 0) + toCents(Number(e.amount) * rate))
+    const totalCents = toCents(baseTotal(e))
+    paid.set(e.paid_by, (paid.get(e.paid_by) ?? 0) + totalCents)
+    const shareCents = baseShares(e, totalCents)
     for (const s of e.expense_splits) {
-      const c = toCents(Number(s.share) * rate)
+      const c = shareCents.get(s.member_id) ?? 0
       owed.set(s.member_id, (owed.get(s.member_id) ?? 0) + c)
       // Share already paid back to the payer for this expense: cancel it out.
       if (s.settled_at && s.member_id !== e.paid_by) {
